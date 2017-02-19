@@ -342,7 +342,7 @@ void MainWindow::fillItems()
     ui->tableWidget->setColumnWidth(colType,120);
     ui->tableWidget->setColumnWidth(colQR,80);
     ui->tableWidget->setColumnWidth(colDesc,240);
-    ui->tableWidget->setColumnWidth(colVal1,120);
+    ui->tableWidget->setColumnWidth(colVal1,240);
     ui->tableWidget->setColumnWidth(colVal2,120);
     ui->tableWidget->setColumnWidth(colVal3,120);
 
