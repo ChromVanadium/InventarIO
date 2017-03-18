@@ -6,17 +6,16 @@ CVEvent::CVEvent()
     f_dateTime = QDateTime::currentDateTime();
     f_id = 0;
     f_itemId = 0;
-    f_type = 0;
+    f_type = 0; // 0 - авто, 1 - вручную (добавлено через диалог)
 }
 
 CVEvent::CVEvent(int _itemId, QString _text)
 {
+    f_id = 0;
     f_itemId = _itemId;
     f_text = _text;
     f_dateTime = QDateTime::currentDateTime();
-    f_type = 1;
-
-   // toDB();
+    f_type = 0;
 }
 
 CVEvent::CVEvent(int _itemId, QString _text, int _type)
@@ -25,8 +24,7 @@ CVEvent::CVEvent(int _itemId, QString _text, int _type)
     f_text = _text;
     f_dateTime = QDateTime::currentDateTime();
     f_type = _type;
-
-   // toDB();
+    f_id = 0;
 }
 
 CVEvent::CVEvent(int _unq, int _itemId, QString _description, int _type, int _unix_time){

@@ -21,10 +21,20 @@ MainWindow::MainWindow(QWidget *parent) :
 
     data = new CVData();
 
+    ui->treeWidget->setVisible(false);
+    ui->tableWidget->setVisible(false);
+    tree = new CVTreeWidget();
+    tree->setExpandsOnDoubleClick(false);
+    ui->vl3->addWidget(tree);
+    connect(tree,SIGNAL(dragAndDropped(int,int)),this,SLOT(onDragAndDropped(int,int)));
+    connect(tree,SIGNAL(somethingDropped()),this,SLOT(onSomethingDropped()));
+    connect(tree,SIGNAL(itemActivated(QTreeWidgetItem*,int)),this,SLOT(onItemActivated(QTreeWidgetItem*,int)));
+
     if(openDB(sets->value("main/lastDB").toString())){
         data->getFromDB();
         getItems();
-        fillItems();
+        //fillItems();
+        fillTree();
     }
 
     ui->tableWidget->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -44,6 +54,12 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QSettings *sets = new QSettings("inventa.ini",  QSettings::IniFormat);
     sets->setValue("Main/geometry", saveGeometry());
     delete sets;
+}
+
+void MainWindow::dropEvent(QDropEvent *event)
+{
+    qDebug() << "dropped" << event->source()->objectName();
+
 }
 
 void MainWindow::on_actAddItem_triggered()
@@ -163,15 +179,78 @@ void MainWindow::addItem()
     };
 }
 
+void MainWindow::editItem(CVItem _item)
+{
+    CVItemDialog *dlg = new CVItemDialog();
+    dlg->setGlobalData(data);
+    dlg->setItem(_item);
+
+    if(dlg->exec() == QDialog::Accepted){
+        CVItem item = dlg->item();
+        item.toDB();
+
+        for(int i=0;i<fItems.count();i++)
+            if(fItems[i].id()==item.id())
+                fItems[i] = item;
+//        CVEvent e;
+//        e = CVEvent(item.id(),"Добавлено",0);
+//        e.toDB();
+//        item.events.append(e);
+
+//        fItems.append(item);
+//        fillItems();
+    };
+}
+
+void MainWindow::editItem(QTreeWidgetItem *itm)
+{
+    bool expanded = itm->isExpanded();
+    int id = itm->text(colId).toInt();
+    int j = -1;
+    for(int i=0;i<fItems.count();i++)
+        if(fItems[i].id()==id)
+            j = i;
+
+    if(j>-1){
+
+        CVItemDialog *dlg = new CVItemDialog();
+        dlg->setGlobalData(data);
+        dlg->setItem(fItems[j]);
+
+        if(dlg->exec() == QDialog::Accepted){
+            CVItem item = dlg->item();
+            item.toDB();
+            fItems[j]=item;
+            fillTreeItem(itm,item);
+        };
+        itm->setExpanded(expanded);
+    };
+}
+
+void MainWindow::addEvent(int pos)
+{
+    CVEvent e;
+    e.setItemId(fItems[pos].id());
+    CVEventDialog *dlg = new CVEventDialog();
+    dlg->setEvent(e);
+
+    if(dlg->exec() == QDialog::Accepted){
+        e = dlg->event();
+        e.toDB();
+        fItems[pos].addEvent(e);
+    }
+    //fItems[pos].addEvent("");
+}
+
 void MainWindow::getItems()
 {
     QSqlQuery q;
     QString qs;
 
-    qs = QString("SELECT id, parent, qr, name, description, type, value1, value2, value3, d "
+    qs = QString("SELECT id, parent, qr, name, description, type, value1, value2, value3, d, lvl "
                  "FROM items "
                  "WHERE d=0 "
-                 "ORDER BY id ");
+                 "ORDER BY lvl, id ");
     execSQL(&q, qs);
     //CVEvent(0,"Запуск").toDB();
 
@@ -182,6 +261,7 @@ void MainWindow::getItems()
         type = CVSpecs(data->type(q.record().value("type").toInt()),q.record().value("type").toInt());
         itm = CVItem( q.record().value("id").toInt(),
                       q.record().value("parent").toInt(),
+                      q.record().value("lvl").toInt(),
                       q.record().value("qr").toString(),
                       q.record().value("name").toString(),
                       q.record().value("description").toString(),
@@ -194,6 +274,8 @@ void MainWindow::getItems()
     }
 
     getEvents();
+
+    organizeItems();
 }
 
 void MainWindow::getEvents()
@@ -211,8 +293,8 @@ void MainWindow::getEvents()
                             q.record().value("unix_time").toInt());
 
         for(int i=0;i<fItems.count();i++){
-            if(fItems[i].id()==e.id())
-                fItems[i].events.append(e);
+            if(fItems[i].id()==e.itemId())
+                fItems[i].addEvent(e);
         }
     }
 }
@@ -323,6 +405,10 @@ void MainWindow::onFilterCheckBoxChanged()
 
 void MainWindow::fillItems()
 {
+    ui->tableWidget->setVisible(false);
+    fillTree();
+    return;
+
     ui->tableWidget->clear();
     QStringList labels;
     labels << "id" << "тип" << "QR" << "Описание" << "1" << "2" << "3" << "-";
@@ -343,7 +429,7 @@ void MainWindow::fillItems()
     ui->tableWidget->setColumnWidth(colQR,80);
     ui->tableWidget->setColumnWidth(colDesc,240);
     ui->tableWidget->setColumnWidth(colVal1,240);
-    ui->tableWidget->setColumnWidth(colVal2,120);
+    ui->tableWidget->setColumnWidth(colVal2,240);
     ui->tableWidget->setColumnWidth(colVal3,120);
 
     for(int i=0;i<fItems.count();i++){
@@ -378,14 +464,85 @@ void MainWindow::fillItems()
         ui->tableWidget->setItem(i,colVal3,wV3);
 
         if(fItems[i].parent()>0)
-            ui->tableWidget->setRowHidden(i,ui->ckShowChilds->isChecked());
+            ui->tableWidget->setRowHidden(i,!ui->ckShowChilds->isChecked());
+
     }
+
 
     ui->tableWidget->resizeRowsToContents();
     ui->tableWidget->hideColumn(colId);
-
 }
 
+void MainWindow::fillTree()
+{
+    tree->clear();
+    QStringList labels;
+    labels << "Название" << "id" << "Инв.№" << "тип" << "1" << "2" << "3" << "-";
+    tree->setColumnCount(labels.count());
+    tree->setHeaderLabels(labels);
+
+    colId = 1;
+    colType = 3;
+    colName = 0;
+    colVal1 = 4;
+    colVal2 = 5;
+    colVal3 = 6;
+    colQR = 2;
+
+    tree->setColumnCount(labels.count());
+    tree->setHeaderLabels(labels);
+
+    QList<CVItem> tempItems = fItems;
+
+    // сначала пробегаем по безродительским итемам
+    for(int i=0;i<tempItems.count();i++){
+        if(tempItems[i].parent()==0){
+            QTreeWidgetItem *tw = new QTreeWidgetItem();
+            tree->addTopLevelItem(tw);
+            fillTreeItem(tw, tempItems[i]);
+            tempItems.takeAt(i); i--;
+        }
+    }
+
+    // далее идем по оставшимся "детям"
+    while(tempItems.count()>0){
+        for(int i=0;i<tempItems.count();i++){
+            QTreeWidgetItemIterator it(tree);
+                while (*it) {
+                    QTreeWidgetItem *wp = (*it);
+                    QString cid = wp->text(colId);
+                    if (cid.toInt() == tempItems[i].parent()){
+                        QTreeWidgetItem *tw = new QTreeWidgetItem();
+                        wp->addChild(tw);
+                        fillTreeItem(tw, tempItems[i]);
+                        tempItems.takeAt(i); i--;
+                    }
+                    ++it;
+                }
+        }
+    }
+
+    tree->setColumnWidth(colName,260);
+
+    tree->hideColumn(colId);
+    tree->expandAll();
+}
+
+void MainWindow::fillTreeItem(QTreeWidgetItem *_wi, CVItem _item)
+{
+    _wi->setText(colId,   QString("%1").arg(_item.id()) );
+    _wi->setText(colQR,   QString("%1").arg(_item.QR()) );
+    _wi->setText(colName, QString("%1").arg(_item.name()) );
+    _wi->setText(colType, QString("%1").arg(_item.type().name) );
+    _wi->setText(colVal1, QString("%1").arg(_item.value1()) );
+    _wi->setText(colVal2, QString("%1").arg(_item.value2()) );
+    _wi->setText(colVal3, QString("%1").arg(_item.value3()) );
+}
+
+void MainWindow::organizeItems()
+{
+
+}
 
 
 void MainWindow::on_tableWidget_cellActivated(int row, int column)
@@ -409,7 +566,8 @@ void MainWindow::on_tableWidget_cellActivated(int row, int column)
 void MainWindow::on_btRefresh_clicked()
 {
     getItems();
-    fillItems();
+    //fillItems();
+    fillTree();
 }
 
 void MainWindow::on_btAdd_clicked()
@@ -430,6 +588,21 @@ void MainWindow::onSetChilds()
 
 }
 
+void MainWindow::onItemActivated(QTreeWidgetItem *it, int col)
+{
+    editItem(it);
+    return;
+
+//    int id = it->text(colId).toInt();
+//    int j = -1;
+//    for(int i=0;i<fItems.count();i++)
+//        if(fItems[i].id()==id)
+//            j = i;
+
+//    if(j>-1)
+//        editItem(fItems[j]);
+}
+
 void MainWindow::on_tableWidget_cellClicked(int row, int column)
 {
     if(parentSelecting){
@@ -446,4 +619,49 @@ void MainWindow::on_tableWidget_cellClicked(int row, int column)
         childId = 0;
         parentId = 0;
     }
+}
+
+void MainWindow::onDragAndDropped(int from, int into)
+{
+    qDebug() << "item" << from << "dropped into" << into;
+    int f=0, t=0;
+    for(int i=0;i<fItems.count();i++){
+        if(fItems[i].QR().toInt() == from) f = i;
+        if(fItems[i].QR().toInt() == into) t = i;
+    }
+
+    fItems[f].setParent(fItems[t].id());
+    fItems[f].toDB();
+    fItems[f].addEvent( QString("Перенесен в подчинение %1").arg(into) );
+    fItems[t].addEvent( QString("Добавлен подчиненный %1").arg(from) );
+
+    tree->expandAll();
+}
+
+void MainWindow::onSomethingDropped()
+{
+    qDebug() << "something dropped";
+}
+
+void MainWindow::on_btJson_clicked()
+{
+    for(int i=0;i<fItems.count();i++){
+        QJsonObject j = fItems[i].toJson();
+        j.insert("source_id","this_comp");
+
+        qDebug() << j;
+    }
+
+}
+
+void MainWindow::on_btAddEvent_clicked()
+{
+    int selId = tree->currentItem()->text(colId).toInt();
+    int pos = -1;
+    for(int i=0;i<fItems.count();i++){
+        if(fItems[i].id()==selId)
+            pos = i;
+    }
+    if(pos>-1)
+        addEvent(pos);
 }

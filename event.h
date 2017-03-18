@@ -3,10 +3,12 @@
 
 #include <QDateTime>
 #include <QString>
+#include <QDebug>
 
 #include "sql.h"
+#include "algorythm.h"
 
-class CVEvent: public CVSql
+class CVEvent: public CVSql, CVAlgorythm
 {
 public:
     CVEvent();

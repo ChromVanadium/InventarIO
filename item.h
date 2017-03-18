@@ -7,12 +7,13 @@
 #include <QDateTime>
 #include "specs.h"
 #include "event.h"
+#include <QJsonObject>
 
 class CVItem: public CVSql
 {
 public:
     CVItem();
-    CVItem(int _id, int _parent, QString _qr, QString _name, QString _description, CVSpecs _type, QString _value1, QString _value2, QString _value3);
+    CVItem(int _id, int _parent, int _level, QString _qr, QString _name, QString _description, CVSpecs _type, QString _value1, QString _value2, QString _value3);
 
     int id();
     void setId(int _id);
@@ -44,6 +45,14 @@ public:
     void markToDelete();
 
     QList<CVEvent> events;
+    void addEvent(QString _eventText);
+    void addEvent(CVEvent _event);
+//    void addChildItem(CVItem _child);
+//    CVItem takeChildItem(int _id);
+
+    //QList<CVItem> childItems;
+
+    QJsonObject toJson();
 
 private:
     CVSpecs f_type;

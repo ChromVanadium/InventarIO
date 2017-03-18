@@ -5,12 +5,13 @@
 #include "item.h"
 #include "data.h"
 #include "sql.h"
+#include "algorythm.h"
 
 namespace Ui {
 class CVItemDialog;
 }
 
-class CVItemDialog : public QDialog, CVSql
+class CVItemDialog : public QDialog, CVSql, CVAlgorythm
 {
     Q_OBJECT
 
@@ -26,7 +27,7 @@ private slots:
     void on_buttonBox_accepted();
     void on_buttonBox_rejected();
 
-
+    void onCKtoggled();
 
 private:
     Ui::CVItemDialog *ui;

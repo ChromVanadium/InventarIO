@@ -21,7 +21,9 @@ SOURCES += main.cpp\
     sql.cpp \
     data.cpp \
     specs.cpp \
-    event_dialog.cpp
+    event_dialog.cpp \
+    cv_tree_widget.cpp \
+    algorythm.cpp
 
 HEADERS  += mainwindow.h \
     item.h \
@@ -32,8 +34,11 @@ HEADERS  += mainwindow.h \
     sql.h \
     data.h \
     specs.h \
-    event_dialog.h
+    event_dialog.h \
+    cv_tree_widget.h \
+    algorythm.h
 
 FORMS    += mainwindow.ui \
     item_dialog.ui \
-    event_dialog.ui
+    event_dialog.ui \
+    cv_tree_widget.ui

@@ -12,9 +12,12 @@ CVItem::CVItem()
     f_value1 = "";
     f_value2 = "";
     f_value3 = "";
+
+    events.clear();
+    //childItems.clear();
 }
 
-CVItem::CVItem(int _id, int _parent, QString _qr, QString _name, QString _description, CVSpecs _type, QString _value1, QString _value2, QString _value3)
+CVItem::CVItem(int _id, int _parent, int _level, QString _qr, QString _name, QString _description, CVSpecs _type, QString _value1, QString _value2, QString _value3)
 {
     f_id = _id;
     f_qr = _qr;
@@ -26,6 +29,10 @@ CVItem::CVItem(int _id, int _parent, QString _qr, QString _name, QString _descri
     f_value2 = _value2;
     f_value3 = _value3;
     f_d = 0;
+    f_level = _level;
+
+    events.clear();
+    //childItems.clear();
 }
 
 int CVItem::id(){
@@ -76,6 +83,8 @@ int CVItem::level(){
 
 void CVItem::setLevel(int _level){
     f_level =_level;
+//    for(int i=0;i<childItems.count();i++)
+//        childItems[i].setLevel(f_level+1);
 }
 
 QString CVItem::value1(){
@@ -130,6 +139,53 @@ void CVItem::markToDelete()
     f_d = 1-f_d;
 }
 
+void CVItem::addEvent(QString _eventText)
+{
+    CVEvent e = CVEvent(f_id, _eventText);
+    e.toDB();
+    events.append(e);
+}
+
+void CVItem::addEvent(CVEvent _event)
+{
+     events.append(_event);
+}
+
+//void CVItem::addChildItem(CVItem _child)
+//{
+//    _child.setLevel(f_level+1);
+//    _child.setParent(f_id);
+//    childItems.append(_child);
+//}
+
+//CVItem CVItem::takeChildItem(int _id)
+//{
+//    CVItem m;
+//    for(int i=0;i<childItems.count();i++)
+//        if(childItems[i].id()==_id)
+//            m = childItems[i];
+//    return m;
+//}
+
+QJsonObject CVItem::toJson()
+{
+    QJsonObject json;
+
+    json["id"] = f_id;
+    json["name"] = f_name;
+    json["description"] = f_description;
+    json["type"] = f_type.index;
+    json["value1"] = f_value1;
+    json["value2"] = f_value2;
+    json["value3"] = f_value3;
+    json["d"] = f_d;
+    json["qr"] = f_qr;
+    json["parent"] = f_parent;
+    json["level"] = f_level;
+
+    return json;
+}
+
 void CVItem::insertToDB()
 {
     QSqlQuery q;
@@ -157,18 +213,19 @@ void CVItem::updateToDB()
     qs = QString("UPDATE items SET "
                  "name='%2', description='%3', "
                  "type=%4, "
-                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent=%10 "
+                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent=%10, lvl=%11 "
                  "WHERE id=%1")
             .arg(f_id)
-            .arg(f_name)
-            .arg(f_description)
+            .arg(f_name.remove("'"))
+            .arg(f_description.remove("'"))
             .arg(f_type.index)
-            .arg(f_value1)
-            .arg(f_value2)
-            .arg(f_value3)
+            .arg(f_value1.remove("'"))
+            .arg(f_value2.remove("'"))
+            .arg(f_value3.remove("'"))
             .arg(f_d)
-            .arg(f_qr)
-            .arg(f_parent);
+            .arg(f_qr.remove("'"))
+            .arg(f_parent)
+            .arg(f_level);
     execSQL(qs);
 }
 

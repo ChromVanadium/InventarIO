@@ -1,17 +1,21 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QDropEvent>
 #include <QMainWindow>
 #include "build.h"
 #include <QSettings>
 #include <QDebug>
 #include <QCheckBox>
+#include <QJsonObject>
+#include <QJsonArray>
 #include "item_dialog.h"
 
 #include "sql.h"
 #include "event.h"
 #include "data.h"
 #include "event_dialog.h"
+#include "cv_tree_widget.h"
 
 namespace Ui {
 class MainWindow;
@@ -26,6 +30,8 @@ public:
     ~MainWindow();
 
     void closeEvent(QCloseEvent *event);
+    void dropEvent(QDropEvent *event);
+
 
 private slots:
     void on_actAddItem_triggered();
@@ -41,8 +47,15 @@ private slots:
 
     void onSetParent();
     void onSetChilds();
+    void onItemActivated(QTreeWidgetItem* it,int col);
 
     void on_tableWidget_cellClicked(int row, int column);
+    void onDragAndDropped(int from, int into);
+    void onSomethingDropped();
+
+    void on_btJson_clicked();
+
+    void on_btAddEvent_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -51,9 +64,17 @@ private:
     bool openDB(QString dbFile);
 
     void addItem();
+    void editItem(CVItem _item);
+    void editItem(QTreeWidgetItem *itm);
+
+    void addEvent(int pos);
 
     void getItems();
     void fillItems();
+    void fillTree();
+
+    void fillTreeItem(QTreeWidgetItem *_wi, CVItem _item);
+    void organizeItems();
 
     void getEvents();
     void getConnections();
@@ -64,8 +85,10 @@ private:
 
     void fillFilter();
 
+    CVTreeWidget *tree;
+
     CVData *data;
-    int colId, colType, colDesc, colVal1, colVal2, colVal3, colQR;
+    int colId, colRow, colType, colDesc, colVal1, colVal2, colVal3, colQR, colName;
 
     QList<CVItem> fItems;
 

@@ -9,7 +9,6 @@ CVEventDialog::CVEventDialog(QWidget *parent) :
 
     ui->dtDate->setDate(QDateTime::currentDateTime().date());
     ui->dtTime->setTime(QDateTime::currentDateTime().time());
-
 }
 
 CVEventDialog::~CVEventDialog()
@@ -37,5 +36,6 @@ void CVEventDialog::on_buttonBox_accepted()
     dt.setDate( ui->dtDate->date() );
     dt.setTime( ui->dtTime->time() );
     f_event.setDateTime(dt.toTime_t());
+    f_event.setType(1);
     accept();
 }

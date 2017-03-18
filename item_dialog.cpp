@@ -7,7 +7,8 @@ CVItemDialog::CVItemDialog(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    //getTypes();
+    connect(ui->ck0,SIGNAL(toggled(bool)),this,SLOT(onCKtoggled()));
+    connect(ui->ck1,SIGNAL(toggled(bool)),this,SLOT(onCKtoggled()));
 }
 
 CVItemDialog::~CVItemDialog()
@@ -19,6 +20,7 @@ void CVItemDialog::setItem(CVItem _item)
 {
     f_item = _item;
     ui->edQR->setText(f_item.QR());
+    ui->edName->setText(f_item.name());
     ui->edDescription->setText(f_item.description());
     ui->edValue1->setText(f_item.value1());
     ui->edValue2->setText(f_item.value2());
@@ -46,6 +48,7 @@ CVItem CVItemDialog::item()
 void CVItemDialog::on_buttonBox_accepted()
 {
     f_item.setQR( ui->edQR->text() );
+    f_item.setName( ui->edName->text() );
     f_item.setDescription( ui->edDescription->toPlainText() );
     f_item.setValue1( ui->edValue1->text() );
     f_item.setValue2( ui->edValue2->text() );
@@ -59,6 +62,11 @@ void CVItemDialog::on_buttonBox_accepted()
 void CVItemDialog::on_buttonBox_rejected()
 {
     reject();
+}
+
+void CVItemDialog::onCKtoggled()
+{
+    fillEvents();
 }
 
 void CVItemDialog::fillTypes()
@@ -80,24 +88,43 @@ void CVItemDialog::fillEvents()
     labels << "id" << "дата" << "событие";
     ui->tableWidget->setColumnCount(labels.count());
     ui->tableWidget->setHorizontalHeaderLabels(labels);
-    ui->tableWidget->setRowCount(f_item.events.count());
+    ui->tableWidget->setRowCount(0);
 
     ui->tableWidget->setColumnWidth(0,24);
     ui->tableWidget->setColumnWidth(1,100);
     ui->tableWidget->setColumnWidth(2,240);
 
+    int r = 0;
     for(int i=0;i<f_item.events.count();i++){
-        QTableWidgetItem *wId = new QTableWidgetItem();
-        wId->setText( QString("%1").arg(f_item.events[i].id()) );
-        ui->tableWidget->setItem(i,0,wId);
 
-        QTableWidgetItem *wDate = new QTableWidgetItem();
-        wDate->setText( QString("%1").arg(f_item.events[i].dateTime().toString("dd.MM.yyyy\nhh:mm")) );
-        ui->tableWidget->setItem(i,1,wDate);
+        bool show = false;
 
-        QTableWidgetItem *wDescription = new QTableWidgetItem();
-        wDescription->setText( QString("%1").arg(f_item.events[i].text()) );
-        ui->tableWidget->setItem(i,2,wDescription);
+        if(f_item.events[i].type()==0){
+            ui->ck0->isChecked() ? show = true : show = false;
+        } else
+        if(f_item.events[i].type()==1){
+            ui->ck1->isChecked() ? show = true : show = false;
+        }
+
+        if( show )
+        {
+            ui->tableWidget->setRowCount(r+1);
+
+            QTableWidgetItem *wId = new QTableWidgetItem();
+            wId->setText( QString("%1").arg(f_item.events[i].id()) );
+            ui->tableWidget->setItem(r,0,wId);
+
+            QTableWidgetItem *wDate = new QTableWidgetItem();
+            wDate->setText( QString("%1").arg( dateToHuman(f_item.events[i].dateTime()) ) );
+            ui->tableWidget->setItem(r,1,wDate);
+
+            QTableWidgetItem *wDescription = new QTableWidgetItem();
+            wDescription->setText( QString("%1").arg(f_item.events[i].text()) );
+            ui->tableWidget->setItem(r,2,wDescription);
+
+            r++;
+        }
+
     }
 
     ui->tableWidget->resizeRowsToContents();
