@@ -2,12 +2,16 @@
 #define MAINWINDOW_H
 
 #include <QDropEvent>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
 #include <QMainWindow>
 #include "build.h"
 #include <QSettings>
 #include <QDebug>
 #include <QCheckBox>
 #include <QJsonObject>
+#include <QJsonDocument>
 #include <QJsonArray>
 #include "item_dialog.h"
 
@@ -57,6 +61,8 @@ private slots:
 
     void on_btAddEvent_clicked();
 
+    void replyfinished(QNetworkReply *reply);
+
 private:
     Ui::MainWindow *ui;
 
@@ -84,6 +90,8 @@ private:
     bool indexOfItem(int itemId);
 
     void fillFilter();
+
+    void sendNewToServer(QByteArray json);
 
     CVTreeWidget *tree;
 

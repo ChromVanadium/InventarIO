@@ -379,7 +379,7 @@ void MainWindow::fillFilter()
 //        };
 //    }
 
-//    connect(ui->ckShowChilds,SIGNAL(toggled(bool)),this,SLOT(onFilterCheckBoxChanged()));
+    //    connect(ui->ckShowChilds,SIGNAL(toggled(bool)),this,SLOT(onFilterCheckBoxChanged()));
 }
 
 void MainWindow::onFilterCheckBoxChanged()
@@ -682,8 +682,38 @@ void MainWindow::on_btJson_clicked()
     syncJson["source_id"] = "home7";
     syncJson["comp_time"] = dt;
 
-    qDebug() << syncJson;
+    QJsonDocument doc(syncJson);
+    QByteArray strJson = doc.toJson();
+    //QString strJson(doc.toJson(QJsonDocument::Compact));
+
+    sendNewToServer(strJson);
 }
+
+
+void MainWindow::sendNewToServer(QByteArray json)
+{
+    QString urlo = QString("http://193.150.105.40:16980/inventario/sendNew.php");
+
+    QNetworkAccessManager *manager = new QNetworkAccessManager(this);
+    QUrl url(urlo);
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+
+    manager->post(request, "json=" + json);
+
+    qDebug() << urlo;
+
+    connect(manager, SIGNAL(finished(QNetworkReply *)), this, SLOT(replyfinished(QNetworkReply *)));
+    connect(manager, SIGNAL(finished(QNetworkReply *)), manager, SLOT(deleteLater()));
+
+    //manager->get(request);
+}
+
+void MainWindow::replyfinished(QNetworkReply *reply){
+    QByteArray content = reply->readAll();
+    qDebug() << content;
+}
+
 
 void MainWindow::on_btAddEvent_clicked()
 {
