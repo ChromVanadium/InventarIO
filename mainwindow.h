@@ -87,6 +87,9 @@ private:
 
     CVTreeWidget *tree;
 
+
+    QJsonObject syncJson;
+
     CVData *data;
     int colId, colRow, colType, colDesc, colVal1, colVal2, colVal3, colQR, colName;
 

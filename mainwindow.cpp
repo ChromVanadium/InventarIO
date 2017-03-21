@@ -42,6 +42,9 @@ MainWindow::MainWindow(QWidget *parent) :
             this,SLOT(showTableWidgetContextMenu(QPoint)));
 
     fillFilter();
+
+    qDebug() << QDateTime::currentDateTime();
+    qDebug() << QDateTime::currentDateTimeUtc();
 }
 
 MainWindow::~MainWindow()
@@ -247,7 +250,7 @@ void MainWindow::getItems()
     QSqlQuery q;
     QString qs;
 
-    qs = QString("SELECT id, parent, qr, name, description, type, value1, value2, value3, d, lvl "
+    qs = QString("SELECT id, sid, parent, qr, name, description, type, value1, value2, value3, d, lvl, u "
                  "FROM items "
                  "WHERE d=0 "
                  "ORDER BY lvl, id ");
@@ -260,6 +263,7 @@ void MainWindow::getItems()
         CVSpecs type;
         type = CVSpecs(data->type(q.record().value("type").toInt()),q.record().value("type").toInt());
         itm = CVItem( q.record().value("id").toInt(),
+                      q.record().value("sid").toInt(),
                       q.record().value("parent").toInt(),
                       q.record().value("lvl").toInt(),
                       q.record().value("qr").toString(),
@@ -268,7 +272,8 @@ void MainWindow::getItems()
                       type,
                       q.record().value("value1").toString(),
                       q.record().value("value2").toString(),
-                      q.record().value("value3").toString() );
+                      q.record().value("value3").toString(),
+                      q.record().value("u").toInt() );
 
         fItems.append(itm);
     }
@@ -287,10 +292,12 @@ void MainWindow::getEvents()
     execSQL(&q, qs);
     while(q.next()){
         CVEvent e = CVEvent(q.record().value("id").toInt(),
+                            q.record().value("sid").toInt(),
                             q.record().value("itemid").toInt(),
                             q.record().value("description").toString(),
                             q.record().value("type").toInt(),
-                            q.record().value("unix_time").toInt());
+                            q.record().value("unix_time").toInt(),
+                            q.record().value("u").toInt());
 
         for(int i=0;i<fItems.count();i++){
             if(fItems[i].id()==e.itemId())
@@ -345,36 +352,34 @@ int MainWindow::parentOfItem(int itemId)
 bool MainWindow::indexOfItem(int itemId)
 {
     int t = 0;
-    qDebug() << itemId;
     for(int i=0;i<fItems.count();i++){
-        qDebug() << "  " << i << fItems[i].id();
         if(fItems[i].id()==itemId)
             t = i;
     }
-    qDebug() << "  =" << t << fItems[t].id();
     return t;
 }
 
 
 void MainWindow::fillFilter()
 {
-    typesIndexes.clear();
-    typesChecked.clear();
+    ui->frame->setVisible(false);
+//    typesIndexes.clear();
+//    typesChecked.clear();
 
-    for(int i=0;i<data->types.count();i++){
-        if(data->types[i].index>0){
-            QCheckBox *ck = new QCheckBox();
-            ck->setChecked(true);
-            typesIndexes.append(data->types[i].index);
-            typesChecked.append(true);
-            ck->setText(data->types[i].name);
-            ck->setObjectName(QString::number(data->types[i].index));
-            ui->gridLayout->addWidget(ck,i,0);
-            connect(ck,SIGNAL(toggled(bool)),this,SLOT(onFilterCheckBoxChanged()));
-        };
-    }
+//    for(int i=0;i<data->types.count();i++){
+//        if(data->types[i].index>0){
+//            QCheckBox *ck = new QCheckBox();
+//            ck->setChecked(true);
+//            typesIndexes.append(data->types[i].index);
+//            typesChecked.append(true);
+//            ck->setText(data->types[i].name);
+//            ck->setObjectName(QString::number(data->types[i].index));
+//            ui->gridLayout->addWidget(ck,i,0);
+//            connect(ck,SIGNAL(toggled(bool)),this,SLOT(onFilterCheckBoxChanged()));
+//        };
+//    }
 
-    connect(ui->ckShowChilds,SIGNAL(toggled(bool)),this,SLOT(onFilterCheckBoxChanged()));
+//    connect(ui->ckShowChilds,SIGNAL(toggled(bool)),this,SLOT(onFilterCheckBoxChanged()));
 }
 
 void MainWindow::onFilterCheckBoxChanged()
@@ -398,8 +403,6 @@ void MainWindow::onFilterCheckBoxChanged()
 
         if(p>0)
             ui->tableWidget->setRowHidden(i,ui->ckShowChilds->isChecked());
-
-
     }
 }
 
@@ -505,6 +508,7 @@ void MainWindow::fillTree()
     }
 
     // далее идем по оставшимся "детям"
+    int looper = 0;
     while(tempItems.count()>0){
         for(int i=0;i<tempItems.count();i++){
             QTreeWidgetItemIterator it(tree);
@@ -520,9 +524,18 @@ void MainWindow::fillTree()
                     ++it;
                 }
         }
+        looper++;
+        if(looper==1000)
+            break;
     }
 
     tree->setColumnWidth(colName,260);
+    tree->setColumnWidth(colType,80);
+    tree->setColumnWidth(colVal1,120);
+    tree->setColumnWidth(colVal2,120);
+    tree->setColumnWidth(colVal3,120);
+    tree->setColumnWidth(colQR,50);
+
 
     tree->hideColumn(colId);
     tree->expandAll();
@@ -537,6 +550,8 @@ void MainWindow::fillTreeItem(QTreeWidgetItem *_wi, CVItem _item)
     _wi->setText(colVal1, QString("%1").arg(_item.value1()) );
     _wi->setText(colVal2, QString("%1").arg(_item.value2()) );
     _wi->setText(colVal3, QString("%1").arg(_item.value3()) );
+
+    _wi->setTextAlignment(colQR,Qt::AlignVCenter|Qt::AlignRight);
 }
 
 void MainWindow::organizeItems()
@@ -630,11 +645,12 @@ void MainWindow::onDragAndDropped(int from, int into)
         if(fItems[i].QR().toInt() == into) t = i;
     }
 
-    fItems[f].setParent(fItems[t].id());
-    fItems[f].toDB();
-    fItems[f].addEvent( QString("Перенесен в подчинение %1").arg(into) );
-    fItems[t].addEvent( QString("Добавлен подчиненный %1").arg(from) );
-
+    if(fItems[f].id()!=fItems[t].id()){
+        fItems[f].setParent(fItems[t].id());
+        fItems[f].toDB();
+        fItems[f].addEvent( QString("Перенесен в подчинение %1").arg(into) );
+        fItems[t].addEvent( QString("Добавлен подчиненный %1").arg(from) );
+    }
     tree->expandAll();
 }
 
@@ -645,13 +661,28 @@ void MainWindow::onSomethingDropped()
 
 void MainWindow::on_btJson_clicked()
 {
+    QJsonArray itemsJson;
     for(int i=0;i<fItems.count();i++){
         QJsonObject j = fItems[i].toJson();
-        j.insert("source_id","this_comp");
+        itemsJson.append(j);
 
-        qDebug() << j;
     }
 
+    QJsonArray eventsJson;
+    for(int i=0;i<fItems.count();i++){
+        for(int j=0;j<fItems[i].events.count();j++){
+            QJsonObject j0 = fItems[i].events[j].toJson();
+            eventsJson.append(j0);
+        }
+    }
+
+    int dt = QDateTime::currentDateTime().toTime_t();
+    syncJson["items"] = itemsJson;
+    syncJson["events"] = eventsJson;
+    syncJson["source_id"] = "home7";
+    syncJson["comp_time"] = dt;
+
+    qDebug() << syncJson;
 }
 
 void MainWindow::on_btAddEvent_clicked()

@@ -4,6 +4,7 @@
 #include <QDateTime>
 #include <QString>
 #include <QDebug>
+#include <QJsonObject>
 
 #include "sql.h"
 #include "algorythm.h"
@@ -15,6 +16,7 @@ public:
     CVEvent(int _itemId, QString _text);
     CVEvent(int _itemId, QString _text, int _type);
     CVEvent(int _unq, int _itemId, QString _description, int _type, int _unix_time);
+    CVEvent(int _unq, int _sid, int _itemId, QString _description, int _type, int _unix_time, int _lastUpdate);
 
     QString text();
     void setText(QString _text);
@@ -28,11 +30,13 @@ public:
     void setType(int _type);
 
     void toDB();
+    QJsonObject toJson();
 
 private:
     QString f_text;
     QDateTime f_dateTime;
-    int f_id, f_itemId, f_type;
+    int f_id, f_sid, f_itemId, f_type, f_d;
+    int f_lastUpdate;
 
     void insertToDB();
     void updateToDB();

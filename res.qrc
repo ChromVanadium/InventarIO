@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>img/cbx_up.PNG</file>
+        <file>img/cbx_down.PNG</file>
+        <file>img/cbx_down_white.png</file>
+    </qresource>
+</RCC>

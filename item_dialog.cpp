@@ -130,3 +130,8 @@ void CVItemDialog::fillEvents()
     ui->tableWidget->resizeRowsToContents();
     ui->tableWidget->hideColumn(0);
 }
+
+void CVItemDialog::on_tableWidget_cellActivated(int row, int column)
+{
+
+}

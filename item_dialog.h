@@ -29,6 +29,8 @@ private slots:
 
     void onCKtoggled();
 
+    void on_tableWidget_cellActivated(int row, int column);
+
 private:
     Ui::CVItemDialog *ui;
 

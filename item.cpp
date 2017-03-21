@@ -4,6 +4,7 @@ CVItem::CVItem()
 {
     f_parent = 0;
     f_id = 0;
+    f_sid = 0;
     f_name = "";
     f_description = "";
     f_qr = "";
@@ -17,9 +18,10 @@ CVItem::CVItem()
     //childItems.clear();
 }
 
-CVItem::CVItem(int _id, int _parent, int _level, QString _qr, QString _name, QString _description, CVSpecs _type, QString _value1, QString _value2, QString _value3)
+CVItem::CVItem(int _id, int _sid, int _parent, int _level, QString _qr, QString _name, QString _description, CVSpecs _type, QString _value1, QString _value2, QString _value3, int _lastUpdate)
 {
     f_id = _id;
+    f_sid = _sid;
     f_qr = _qr;
     f_parent = _parent;
     f_name = _name;
@@ -30,7 +32,7 @@ CVItem::CVItem(int _id, int _parent, int _level, QString _qr, QString _name, QSt
     f_value3 = _value3;
     f_d = 0;
     f_level = _level;
-
+    f_lastUpdate = _lastUpdate;
     events.clear();
     //childItems.clear();
 }
@@ -41,6 +43,16 @@ int CVItem::id(){
 
 void CVItem::setId(int _id){
     f_id = _id;
+}
+
+int CVItem::sid()
+{
+    return f_sid;
+}
+
+void CVItem::setSid(int _sid)
+{
+    f_sid = _sid;
 }
 
 QString CVItem::name(){
@@ -111,6 +123,21 @@ void CVItem::setValue3(QString _value3){
     f_value3 = _value3;
 }
 
+int CVItem::lastUpdateUnix()
+{
+    return f_lastUpdate;
+}
+
+void CVItem::setLastUpdate(QDateTime _dateTime)
+{
+    f_lastUpdate = _dateTime.toTime_t();
+}
+
+void CVItem::setLastUpdate(int _unixDateTime)
+{
+    f_lastUpdate = _unixDateTime;
+}
+
 void CVItem::getEvents()
 {
 
@@ -172,6 +199,7 @@ QJsonObject CVItem::toJson()
     QJsonObject json;
 
     json["id"] = f_id;
+    json["sid"] = f_sid;
     json["name"] = f_name;
     json["description"] = f_description;
     json["type"] = f_type.index;
@@ -182,6 +210,7 @@ QJsonObject CVItem::toJson()
     json["qr"] = f_qr;
     json["parent"] = f_parent;
     json["level"] = f_level;
+    json["u"] = f_lastUpdate;
 
     return json;
 }
@@ -210,10 +239,12 @@ void CVItem::updateToDB()
     QSqlQuery q;
     QString qs;
 
+    f_lastUpdate = QDateTime::currentDateTime().toTime_t();
+
     qs = QString("UPDATE items SET "
                  "name='%2', description='%3', "
                  "type=%4, "
-                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent=%10, lvl=%11 "
+                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent=%10, lvl=%11, u=%12 "
                  "WHERE id=%1")
             .arg(f_id)
             .arg(f_name.remove("'"))
@@ -225,7 +256,8 @@ void CVItem::updateToDB()
             .arg(f_d)
             .arg(f_qr.remove("'"))
             .arg(f_parent)
-            .arg(f_level);
+            .arg(f_level)
+            .arg(f_lastUpdate);
     execSQL(qs);
 }
 

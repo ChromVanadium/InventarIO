@@ -42,3 +42,6 @@ FORMS    += mainwindow.ui \
     item_dialog.ui \
     event_dialog.ui \
     cv_tree_widget.ui
+
+RESOURCES += \
+    res.qrc

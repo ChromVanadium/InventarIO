@@ -13,10 +13,13 @@ class CVItem: public CVSql
 {
 public:
     CVItem();
-    CVItem(int _id, int _parent, int _level, QString _qr, QString _name, QString _description, CVSpecs _type, QString _value1, QString _value2, QString _value3);
+    CVItem(int _id, int _sid, int _parent, int _level, QString _qr, QString _name, QString _description, CVSpecs _type,
+           QString _value1, QString _value2, QString _value3, int _lastUpdate);
 
     int id();
     void setId(int _id);
+    int sid();
+    void setSid(int _sid);
     QString name();
     void setName(QString _name);
     QString QR();
@@ -35,6 +38,10 @@ public:
     void setValue2(QString _value2);
     QString value3();
     void setValue3(QString _value3);
+
+    int lastUpdateUnix();
+    void setLastUpdate(QDateTime _dateTime);
+    void setLastUpdate(int _unixDateTime);
 
     void getEvents();
     void setEvents(QList<CVEvent> _events);
@@ -56,12 +63,13 @@ public:
 
 private:
     CVSpecs f_type;
-    int f_id, f_parent;
+    int f_id, f_sid, f_parent;
     int f_level;
     QString f_value1, f_value2, f_value3;
     QString f_name, f_description;
     QString f_qr;
     int f_d;
+    int f_lastUpdate;
 
     void insertToDB();
     void updateToDB();
