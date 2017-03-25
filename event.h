@@ -5,6 +5,8 @@
 #include <QString>
 #include <QDebug>
 #include <QJsonObject>
+#include <QUuid>
+#include <QCryptographicHash>
 
 #include "sql.h"
 #include "algorythm.h"
@@ -16,7 +18,7 @@ public:
     CVEvent(int _itemId, QString _text);
     CVEvent(int _itemId, QString _text, int _type);
     CVEvent(int _unq, int _itemId, QString _description, int _type, int _unix_time);
-    CVEvent(int _unq, int _sid, int _itemId, QString _description, int _type, int _unix_time, int _lastUpdate);
+    CVEvent(int _unq, int _sid, QString _uuid, int _itemId, QString _description, int _type, int _unix_time, int _lastUpdate);
 
     QString text();
     void setText(QString _text);
@@ -37,6 +39,10 @@ private:
     QDateTime f_dateTime;
     int f_id, f_sid, f_itemId, f_type, f_d;
     int f_lastUpdate;
+    QString f_uuid;
+
+    QString hash0;
+    QString makeHash();
 
     void insertToDB();
     void updateToDB();

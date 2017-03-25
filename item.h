@@ -8,12 +8,14 @@
 #include "specs.h"
 #include "event.h"
 #include <QJsonObject>
+#include <QUuid>
+#include <QCryptographicHash>
 
 class CVItem: public CVSql
 {
 public:
     CVItem();
-    CVItem(int _id, int _sid, int _parent, int _level, QString _qr, QString _name, QString _description, CVSpecs _type,
+    CVItem(int _id, int _sid, QString _uuid, int _parent, int _level, QString _qr, QString _name, QString _description, CVSpecs _type,
            QString _value1, QString _value2, QString _value3, int _lastUpdate);
 
     int id();
@@ -29,6 +31,9 @@ public:
 
     CVSpecs type();
     void setType(CVSpecs _type);
+
+    QString uuid();
+    void setUuid(QString _uuid);
 
     int level();
     void setLevel(int _level);
@@ -68,8 +73,12 @@ private:
     QString f_value1, f_value2, f_value3;
     QString f_name, f_description;
     QString f_qr;
+    QString f_uuid;
     int f_d;
     int f_lastUpdate;
+
+    QString hash0;
+    QString makeHash();
 
     void insertToDB();
     void updateToDB();

@@ -250,7 +250,7 @@ void MainWindow::getItems()
     QSqlQuery q;
     QString qs;
 
-    qs = QString("SELECT id, sid, parent, qr, name, description, type, value1, value2, value3, d, lvl, u "
+    qs = QString("SELECT id, sid, parent, uuid, qr, name, description, type, value1, value2, value3, d, lvl, u "
                  "FROM items "
                  "WHERE d=0 "
                  "ORDER BY lvl, id ");
@@ -264,6 +264,7 @@ void MainWindow::getItems()
         type = CVSpecs(data->type(q.record().value("type").toInt()),q.record().value("type").toInt());
         itm = CVItem( q.record().value("id").toInt(),
                       q.record().value("sid").toInt(),
+                      q.record().value("uuid").toString(),
                       q.record().value("parent").toInt(),
                       q.record().value("lvl").toInt(),
                       q.record().value("qr").toString(),
@@ -293,6 +294,7 @@ void MainWindow::getEvents()
     while(q.next()){
         CVEvent e = CVEvent(q.record().value("id").toInt(),
                             q.record().value("sid").toInt(),
+                            q.record().value("uuid").toString(),
                             q.record().value("itemid").toInt(),
                             q.record().value("description").toString(),
                             q.record().value("type").toInt(),

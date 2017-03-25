@@ -9,6 +9,9 @@ CVEvent::CVEvent()
     f_itemId = 0;
     f_type = 0; // 0 - авто, 1 - вручную (добавлено через диалог)
     f_lastUpdate = QDateTime::currentDateTime().toTime_t();
+    f_uuid = QUuid::createUuid().toString();
+
+    hash0 = makeHash();
 }
 
 CVEvent::CVEvent(int _itemId, QString _text)
@@ -20,6 +23,9 @@ CVEvent::CVEvent(int _itemId, QString _text)
     f_dateTime = QDateTime::currentDateTime();
     f_type = 0;
     f_lastUpdate = QDateTime::currentDateTime().toTime_t();
+    f_uuid = QUuid::createUuid().toString();
+
+    hash0 = makeHash();
 }
 
 CVEvent::CVEvent(int _itemId, QString _text, int _type)
@@ -31,6 +37,9 @@ CVEvent::CVEvent(int _itemId, QString _text, int _type)
     f_type = _type;
     f_id = 0;
     f_lastUpdate = QDateTime::currentDateTime().toTime_t();
+    f_uuid = QUuid::createUuid().toString();
+
+    hash0 = makeHash();
 }
 
 CVEvent::CVEvent(int _unq, int _itemId, QString _description, int _type, int _unix_time){
@@ -41,9 +50,12 @@ CVEvent::CVEvent(int _unq, int _itemId, QString _description, int _type, int _un
     f_id = _unq;
     f_sid = 0;
     f_lastUpdate = QDateTime::currentDateTime().toTime_t();
+    f_uuid = QUuid::createUuid().toString();
+
+    hash0 = makeHash();
 }
 
-CVEvent::CVEvent(int _unq, int _sid, int _itemId, QString _description, int _type, int _unix_time, int _lastUpdate)
+CVEvent::CVEvent(int _unq, int _sid, QString _uuid, int _itemId, QString _description, int _type, int _unix_time, int _lastUpdate)
 {
     f_itemId = _itemId;
     f_sid = _sid;
@@ -52,6 +64,9 @@ CVEvent::CVEvent(int _unq, int _sid, int _itemId, QString _description, int _typ
     f_type = _type;
     f_id = _unq;
     f_lastUpdate = _lastUpdate;
+    f_uuid = _uuid;
+
+    hash0 = makeHash();
 }
 
 QString CVEvent::text(){
@@ -96,10 +111,17 @@ void CVEvent::setType(int _type){
 
 void CVEvent::toDB()
 {
-    if(f_id>0)
-        updateToDB();
-    else
-        insertToDB();
+    QString hash1 = makeHash();
+    bool a = hash0.compare(hash1,Qt::CaseInsensitive)==0;
+
+    if(!a){
+        hash0 = hash1;
+
+        if(f_id>0)
+            updateToDB();
+        else
+            insertToDB();
+    }
 }
 
 QJsonObject CVEvent::toJson()
@@ -115,8 +137,28 @@ QJsonObject CVEvent::toJson()
     json["datetime"] = dt;
     json["d"] = f_d;
     json["u"] = f_lastUpdate;
+    json["uuid"] = f_uuid;
 
     return json;
+}
+
+QString CVEvent::makeHash()
+{
+    QString h = QString("%1_%2_%3_%4_%5_%6_%7_%8_%9_%10_%11_%12")
+            .arg(f_id)
+            .arg(f_sid)
+            .arg(f_itemId)
+            .arg(f_type)
+            .arg(f_text)
+            .arg(f_dateTime.toTime_t())
+            .arg(f_d);
+
+    QCryptographicHash md5(QCryptographicHash::Md5);
+    QVariant v = h;
+    md5.addData( v.toByteArray() );
+    QString hash = md5.result().toHex();
+
+    return hash;
 }
 
 void CVEvent::insertToDB()
@@ -147,13 +189,14 @@ void CVEvent::updateToDB()
 
     qs = QString("UPDATE events SET "
                  "description='%2', type=%3, "
-                 "itemid=%4, unix_time=%5, u=%6 "
+                 "itemid=%4, unix_time=%5, u=%6, uuid='%7' "
                  "WHERE id=%1")
             .arg(f_id)
             .arg(f_text)
             .arg(f_type)
             .arg(f_itemId)
             .arg(f_dateTime.toTime_t())
-            .arg(f_lastUpdate);
+            .arg(f_lastUpdate)
+            .arg(f_uuid);
     execSQL(qs);
 }

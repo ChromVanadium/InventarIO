@@ -14,11 +14,15 @@ CVItem::CVItem()
     f_value2 = "";
     f_value3 = "";
 
+    f_uuid = QUuid::createUuid().toString();
+
     events.clear();
+
+    hash0 = makeHash();
     //childItems.clear();
 }
 
-CVItem::CVItem(int _id, int _sid, int _parent, int _level, QString _qr, QString _name, QString _description, CVSpecs _type, QString _value1, QString _value2, QString _value3, int _lastUpdate)
+CVItem::CVItem(int _id, int _sid, QString _uuid, int _parent, int _level, QString _qr, QString _name, QString _description, CVSpecs _type, QString _value1, QString _value2, QString _value3, int _lastUpdate)
 {
     f_id = _id;
     f_sid = _sid;
@@ -33,8 +37,10 @@ CVItem::CVItem(int _id, int _sid, int _parent, int _level, QString _qr, QString 
     f_d = 0;
     f_level = _level;
     f_lastUpdate = _lastUpdate;
+    f_uuid = _uuid;
     events.clear();
     //childItems.clear();
+    hash0 = makeHash();
 }
 
 int CVItem::id(){
@@ -87,6 +93,16 @@ CVSpecs CVItem::type(){
 
 void CVItem::setType(CVSpecs _type){
     f_type = _type;
+}
+
+QString CVItem::uuid()
+{
+    return f_uuid;
+}
+
+void CVItem::setUuid(QString _uuid)
+{
+    f_uuid = _uuid;
 }
 
 int CVItem::level(){
@@ -155,10 +171,17 @@ void CVItem::setParent(int _parent)
 
 void CVItem::toDB()
 {
-    if(f_id>0)
-        updateToDB();
-    else
-        insertToDB();
+    QString hash1 = makeHash();
+    bool a = hash0.compare(hash1,Qt::CaseInsensitive)==0;
+
+    if(!a){
+        hash0 = hash1;
+
+        if(f_id>0)
+            updateToDB();
+        else
+            insertToDB();
+    }
 }
 
 void CVItem::markToDelete()
@@ -211,8 +234,33 @@ QJsonObject CVItem::toJson()
     json["parent"] = f_parent;
     json["level"] = f_level;
     json["u"] = f_lastUpdate;
+    json["uuid"] = f_uuid;
 
     return json;
+}
+
+QString CVItem::makeHash()
+{
+    QString h = QString("%1_%2_%3_%4_%5_%6_%7_%8_%9_%10_%11_%12")
+            .arg(f_id)
+            .arg(f_sid)
+            .arg(f_name)
+            .arg(f_description)
+            .arg(f_type.index)
+            .arg(f_value1)
+            .arg(f_value2)
+            .arg(f_value3)
+            .arg(f_d)
+            .arg(f_qr)
+            .arg(f_parent)
+            .arg(f_level);
+
+    QCryptographicHash md5(QCryptographicHash::Md5);
+    QVariant v = h;
+    md5.addData( v.toByteArray() );
+    QString hash = md5.result().toHex();
+
+    return hash;
 }
 
 void CVItem::insertToDB()
@@ -241,10 +289,13 @@ void CVItem::updateToDB()
 
     f_lastUpdate = QDateTime::currentDateTime().toTime_t();
 
+    if(f_uuid.isEmpty())
+        f_uuid = QUuid::createUuid().toString();
+
     qs = QString("UPDATE items SET "
                  "name='%2', description='%3', "
                  "type=%4, "
-                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent=%10, lvl=%11, u=%12 "
+                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent=%10, lvl=%11, u=%12, uuid='%13' "
                  "WHERE id=%1")
             .arg(f_id)
             .arg(f_name.remove("'"))
@@ -257,7 +308,9 @@ void CVItem::updateToDB()
             .arg(f_qr.remove("'"))
             .arg(f_parent)
             .arg(f_level)
-            .arg(f_lastUpdate);
+            .arg(f_lastUpdate)
+            .arg(f_uuid);
     execSQL(qs);
+    qDebug() << "updated";
 }
 
