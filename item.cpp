@@ -241,9 +241,8 @@ QJsonObject CVItem::toJson()
 
 QString CVItem::makeHash()
 {
-    QString h = QString("%1_%2_%3_%4_%5_%6_%7_%8_%9_%10_%11_%12")
+    QString h = QString("%1_%2_%3_%4_%5_%6_%7_%8_%9_%10_%11")
             .arg(f_id)
-            .arg(f_sid)
             .arg(f_name)
             .arg(f_description)
             .arg(f_type.index)
@@ -295,7 +294,7 @@ void CVItem::updateToDB()
     qs = QString("UPDATE items SET "
                  "name='%2', description='%3', "
                  "type=%4, "
-                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent=%10, lvl=%11, u=%12, uuid='%13' "
+                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent=%10, lvl=%11, u=%12, uuid='%13', sid=%14 "
                  "WHERE id=%1")
             .arg(f_id)
             .arg(f_name.remove("'"))
@@ -309,7 +308,8 @@ void CVItem::updateToDB()
             .arg(f_parent)
             .arg(f_level)
             .arg(f_lastUpdate)
-            .arg(f_uuid);
+            .arg(f_uuid)
+            .arg(f_sid);
     execSQL(qs);
     qDebug() << "updated";
 }

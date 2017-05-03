@@ -54,6 +54,8 @@ public:
     void setParent(int _parent);
 
     void toDB();
+    void insertToDB();
+    void updateToDB();
     void markToDelete();
 
     QList<CVEvent> events;
@@ -80,8 +82,7 @@ private:
     QString hash0;
     QString makeHash();
 
-    void insertToDB();
-    void updateToDB();
+
 };
 
 #endif // CVITEM_H

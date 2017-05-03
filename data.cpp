@@ -20,6 +20,24 @@ void CVData::getFromDB()
         types.append( CVSpecs(q.record().value("description").toString(),
                               q.record().value("id").toInt()) );
     }
+
+    qs = QString("SELECT uuid FROM localsets LIMIT 1 ");
+    execSQL(&q,qs);
+    q.next();
+    f_uuid = q.record().value("uuid").toString();
+
+    if(f_uuid.isEmpty())
+        createUuid();
+}
+
+QString CVData::uuid()
+{
+    return f_uuid;
+}
+
+void CVData::setUuid(QString _uuid)
+{
+    f_uuid = _uuid;
 }
 
 QString CVData::type(int index)
@@ -29,4 +47,11 @@ QString CVData::type(int index)
         if(types[i].index==index)
             res = types[i].name;
     return res;
+}
+
+void CVData::createUuid()
+{
+    f_uuid = QUuid::createUuid().toString();
+
+    execSQL( QString("INSERT INTO localsets(uuid) VALUES('%1')").arg(f_uuid) );
 }

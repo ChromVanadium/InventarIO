@@ -681,7 +681,7 @@ void MainWindow::on_btJson_clicked()
     int dt = QDateTime::currentDateTime().toTime_t();
     syncJson["items"] = itemsJson;
     syncJson["events"] = eventsJson;
-    syncJson["source_id"] = "home7";
+    syncJson["source_id"] = data->uuid();
     syncJson["comp_time"] = dt;
 
     QJsonDocument doc(syncJson);
@@ -714,6 +714,29 @@ void MainWindow::sendNewToServer(QByteArray json)
 void MainWindow::replyfinished(QNetworkReply *reply){
     QByteArray content = reply->readAll();
     qDebug() << content;
+
+    QJsonDocument json(QJsonDocument::fromJson(content));
+    qDebug() << "\n\n";
+    qDebug() << json;
+
+    QJsonObject j1 = json.object();
+    qDebug() << "\n\n";
+    int done = j1["done"].toInt();
+    QJsonArray newSids = j1["newSids"].toArray();
+
+    for(int j=0;j<newSids.count();j++){
+        QJsonObject obj = newSids[j].toObject();
+        qDebug() << obj["uuid"].toString() << " =>" << obj["sid"].toInt();
+        for(int i=0;i<fItems.count();i++){
+            if(fItems[i].uuid().compare(obj["uuid"].toString(),Qt::CaseInsensitive)==0){
+                fItems[i].setSid(obj["sid"].toInt());
+                fItems[i].updateToDB();
+            }
+
+        }
+    }
+    ui->lbUpdated->setText( QString("last sync %1").arg(QDateTime::currentDateTime().toString("hh:mm.ss")) );
+    //qDebug() << done << ar;
 }
 
 
