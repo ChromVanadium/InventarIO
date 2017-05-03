@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QDropEvent>
+#include <QFileDialog>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
@@ -13,6 +14,7 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QInputDialog>
 #include "item_dialog.h"
 
 #include "sql.h"
@@ -63,11 +65,16 @@ private slots:
 
     void replyfinished(QNetworkReply *reply);
 
+    void on_actCreate_triggered();
+
+    void on_actOpenDB_triggered();
+
 private:
     Ui::MainWindow *ui;
 
     QSqlDatabase db;
     bool openDB(QString dbFile);
+    QString databaseName;
 
     void addItem();
     void editItem(CVItem _item);

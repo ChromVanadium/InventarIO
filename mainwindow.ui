@@ -204,6 +204,7 @@ selection-background-color: rgb(255, 255, 224);</string>
     <property name="title">
      <string>Файл</string>
     </property>
+    <addaction name="actCreate"/>
     <addaction name="actOpenDB"/>
     <addaction name="separator"/>
     <addaction name="actExit"/>
@@ -239,6 +240,11 @@ selection-background-color: rgb(255, 255, 224);</string>
   <action name="actAddItem">
    <property name="text">
     <string>Добавить позицию</string>
+   </property>
+  </action>
+  <action name="actCreate">
+   <property name="text">
+    <string>Создать базу данных</string>
    </property>
   </action>
  </widget>

@@ -11,10 +11,7 @@ MainWindow::MainWindow(QWidget *parent) :
     childId = 0;
     parentId = 0;
 
-    setWindowTitle( QString("InventarIO. build %1 от %2 %3")
-                    .arg(BUILD)
-                    .arg(BUILDDATE)
-                    .arg(BUILDTIME) );
+
 
     QSettings *sets = new QSettings("inventa.ini",  QSettings::IniFormat);
     restoreGeometry(sets->value("Main/geometry").toByteArray());
@@ -36,6 +33,12 @@ MainWindow::MainWindow(QWidget *parent) :
         //fillItems();
         fillTree();
     }
+
+    setWindowTitle( QString("InventarIO. %4. build %1 от %2 %3")
+                    .arg(BUILD)
+                    .arg(BUILDDATE)
+                    .arg(BUILDTIME)
+                    .arg(databaseName));
 
     ui->tableWidget->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->tableWidget,SIGNAL(customContextMenuRequested(QPoint)),
@@ -144,6 +147,10 @@ void MainWindow::showTableWidgetContextMenu(const QPoint &pos)
 bool MainWindow::openDB(QString dbFile){
 
     bool res = false;
+    if(dbFile.isEmpty())
+        dbFile = "inventa.db";
+
+    databaseName = dbFile;
 
     db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName("inventa.db");
@@ -750,4 +757,106 @@ void MainWindow::on_btAddEvent_clicked()
     }
     if(pos>-1)
         addEvent(pos);
+}
+
+void MainWindow::on_actCreate_triggered()
+{
+    bool ok;
+    QString text = QInputDialog::getText(this, "Новая база",
+                                               "Название базы данных", QLineEdit::Normal,
+                                               "", &ok);
+
+    if (ok && !text.isEmpty()){
+        QString path = text + ".db";
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");//not dbConnection
+        db.setDatabaseName(path);
+        db.open();
+        QSqlQuery query;
+        query.exec("CREATE TABLE events ( "
+                   "id	INTEGER PRIMARY KEY AUTOINCREMENT, "
+                   "sid	INTEGER DEFAULT 0, "
+                   "itemid	INTEGER, "
+                   "description	TEXT, "
+                   "unix_time	INTEGER, "
+                   "type	INTEGER, "
+                   "d	INTEGER DEFAULT 0, "
+                   "u	INTEGER, "
+                   "uuid	TEXT "
+                   ")");
+        query.exec("CREATE TABLE fields_labels ( "
+                   "type	INTEGER, "
+                   "label1	TEXT, "
+                   "label2	TEXT, "
+                   "label3	TEXT, "
+                   "u	INTEGER "
+                   ")");
+        query.exec("CREATE TABLE items ( "
+                   "id	INTEGER PRIMARY KEY AUTOINCREMENT, "
+                   "sid	INTEGER DEFAULT 0, "
+                   "parent	INTEGER DEFAULT 0, "
+                   "name	TEXT, "
+                   "description	TEXT, "
+                   "type	INTEGER DEFAULT 0, "
+                   "value1	TEXT, "
+                   "value2	TEXT, "
+                   "value3	TEXT, "
+                   "lvl	INTEGER DEFAULT 0, "
+                   "d	INTEGER DEFAULT 0, "
+                   "qr	TEXT, "
+                   "u	INTEGER, "
+                   "uuid	TEXT "
+                   ")");
+        query.exec("CREATE TABLE localsets ( "
+                   "uuid	TEXT, "
+                   "timedelta	INTEGER "
+                   ")");
+        query.exec("CREATE TABLE types ( "
+                   "id	INTEGER PRIMARY KEY AUTOINCREMENT, "
+                   "description	TEXT, "
+                   "u	INTEGER, "
+                   ")");
+
+        if(openDB(text)){
+            data->getFromDB();
+            getItems();
+            fillTree();
+        }
+
+        setWindowTitle( QString("InventarIO. %4. build %1 от %2 %3")
+                        .arg(BUILD)
+                        .arg(BUILDDATE)
+                        .arg(BUILDTIME)
+                        .arg(databaseName));
+    }
+}
+
+void MainWindow::on_actOpenDB_triggered()
+{
+    QFileDialog *f = new QFileDialog();
+    f->setDirectory( QDir::currentPath() );
+
+    if (f->exec() == QDialog::Accepted){
+        QString text = f->selectedFiles().at(0);
+
+        QFileInfo dr;
+        dr.setFile( text );
+        QString fN = dr.fileName();
+
+        db.close();
+
+        if(openDB(fN)){
+            data->getFromDB();
+            getItems();
+            fillTree();
+
+            QSettings *sets = new QSettings("inventa.ini",  QSettings::IniFormat);
+            sets->setValue("main/lastDB",fN);
+
+            setWindowTitle( QString("InventarIO. %4. build %1 от %2 %3")
+                            .arg(BUILD)
+                            .arg(BUILDDATE)
+                            .arg(BUILDTIME)
+                            .arg(databaseName));
+        }
+    }
 }
