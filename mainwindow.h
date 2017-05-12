@@ -60,14 +60,14 @@ private slots:
     void onSomethingDropped();
 
     void on_btJson_clicked();
-
     void on_btAddEvent_clicked();
-
     void replyfinished(QNetworkReply *reply);
-
     void on_actCreate_triggered();
-
     void on_actOpenDB_triggered();
+
+    void syncReplyFinished(QNetworkReply *reply);
+
+    void on_btSync_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -102,11 +102,13 @@ private:
 
     CVTreeWidget *tree;
 
-
     QJsonObject syncJson;
 
     CVData *data;
     int colId, colRow, colType, colDesc, colVal1, colVal2, colVal3, colQR, colName;
+
+    QStringList syncLog;
+    QDateTime st0, st1, st2;
 
     QList<CVItem> fItems;
 
@@ -115,6 +117,8 @@ private:
 
     QList<int> typesIndexes;
     QList<bool> typesChecked;
+
+    void sync();
 };
 
 #endif // MAINWINDOW_H

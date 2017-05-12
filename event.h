@@ -33,6 +33,7 @@ public:
 
     void toDB();
     QJsonObject toJson();
+    void setModified(bool isModified);
 
 private:
     QString f_text;
@@ -40,6 +41,7 @@ private:
     int f_id, f_sid, f_itemId, f_type, f_d;
     int f_lastUpdate;
     QString f_uuid;
+    int f_modified;
 
     QString hash0;
     QString makeHash();

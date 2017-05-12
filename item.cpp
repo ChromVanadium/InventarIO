@@ -13,6 +13,7 @@ CVItem::CVItem()
     f_value1 = "";
     f_value2 = "";
     f_value3 = "";
+    f_modified = 1;
 
     f_uuid = QUuid::createUuid().toString();
 
@@ -39,6 +40,7 @@ CVItem::CVItem(int _id, int _sid, QString _uuid, int _parent, int _level, QStrin
     f_lastUpdate = _lastUpdate;
     f_uuid = _uuid;
     events.clear();
+    f_modified = 0;
     //childItems.clear();
     hash0 = makeHash();
 }
@@ -174,7 +176,7 @@ void CVItem::toDB()
     QString hash1 = makeHash();
     bool a = hash0.compare(hash1,Qt::CaseInsensitive)==0;
 
-    if(!a){
+    if(!a || f_modified==1){
         hash0 = hash1;
 
         if(f_id>0)
@@ -187,6 +189,14 @@ void CVItem::toDB()
 void CVItem::markToDelete()
 {
     f_d = 1-f_d;
+}
+
+void CVItem::setModified(bool isModified)
+{
+    if(isModified)
+        f_modified = 1;
+    else
+        f_modified = 0;
 }
 
 void CVItem::addEvent(QString _eventText)
@@ -294,7 +304,7 @@ void CVItem::updateToDB()
     qs = QString("UPDATE items SET "
                  "name='%2', description='%3', "
                  "type=%4, "
-                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent=%10, lvl=%11, u=%12, uuid='%13', sid=%14 "
+                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent=%10, lvl=%11, u=%12, uuid='%13', sid=%14, modified=1 "
                  "WHERE id=%1")
             .arg(f_id)
             .arg(f_name.remove("'"))

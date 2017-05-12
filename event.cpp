@@ -65,6 +65,11 @@ CVEvent::CVEvent(int _unq, int _sid, QString _uuid, int _itemId, QString _descri
     f_id = _unq;
     f_lastUpdate = _lastUpdate;
     f_uuid = _uuid;
+    if(f_uuid.isEmpty()){
+        f_uuid = QUuid::createUuid().toString();
+        setModified(true);
+        toDB();
+    }
 
     hash0 = makeHash();
 }
@@ -114,7 +119,7 @@ void CVEvent::toDB()
     QString hash1 = makeHash();
     bool a = hash0.compare(hash1,Qt::CaseInsensitive)==0;
 
-    if(!a){
+    if(!a || f_modified==1){
         hash0 = hash1;
 
         if(f_id>0)
@@ -140,6 +145,14 @@ QJsonObject CVEvent::toJson()
     json["uuid"] = f_uuid;
 
     return json;
+}
+
+void CVEvent::setModified(bool isModified)
+{
+    if(isModified)
+        f_modified = 1;
+    else
+        f_modified = 0;
 }
 
 QString CVEvent::makeHash()
@@ -189,7 +202,7 @@ void CVEvent::updateToDB()
 
     qs = QString("UPDATE events SET "
                  "description='%2', type=%3, "
-                 "itemid=%4, unix_time=%5, u=%6, uuid='%7' "
+                 "itemid=%4, unix_time=%5, u=%6, uuid='%7', modified=1 "
                  "WHERE id=%1")
             .arg(f_id)
             .arg(f_text)

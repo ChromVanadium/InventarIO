@@ -57,6 +57,7 @@ public:
     void insertToDB();
     void updateToDB();
     void markToDelete();
+    void setModified(bool isModified);
 
     QList<CVEvent> events;
     void addEvent(QString _eventText);
@@ -78,6 +79,7 @@ private:
     QString f_uuid;
     int f_d;
     int f_lastUpdate;
+    int f_modified;
 
     QString hash0;
     QString makeHash();

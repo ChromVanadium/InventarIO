@@ -56,8 +56,18 @@
       </item>
       <item>
        <widget class="QPushButton" name="btJson">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
         <property name="text">
          <string>json</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btSync">
+        <property name="text">
+         <string>sync</string>
         </property>
        </widget>
       </item>

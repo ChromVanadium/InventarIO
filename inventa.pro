@@ -36,7 +36,8 @@ HEADERS  += mainwindow.h \
     specs.h \
     event_dialog.h \
     cv_tree_widget.h \
-    algorythm.h
+    algorythm.h \
+    build.h
 
 FORMS    += mainwindow.ui \
     item_dialog.ui \
@@ -45,3 +46,9 @@ FORMS    += mainwindow.ui \
 
 RESOURCES += \
     res.qrc
+
+DISTFILES += \
+    .gitignore \
+    build.txt \
+    build_inc.bat \
+    README.md
