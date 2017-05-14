@@ -19,6 +19,8 @@ public:
     void setEvent(CVEvent _event);
     CVEvent event();
 
+    void setTitle(QString _title);
+
 private slots:
     void on_buttonBox_accepted();
 

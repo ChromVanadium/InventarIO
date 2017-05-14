@@ -10,7 +10,7 @@ void CVData::getFromDB()
     QSqlQuery q;
     QString qs;
 
-    qs = QString("SELECT id, description FROM types ORDER BY description ");
+    qs = QString("SELECT unq, id, description FROM types ORDER BY description ");
     execSQL(&q,qs);
 
     types.clear();
@@ -18,13 +18,15 @@ void CVData::getFromDB()
 
     while(q.next()){
         types.append( CVSpecs(q.record().value("description").toString(),
-                              q.record().value("id").toInt()) );
+                              q.record().value("unq").toInt()) );
+        types2.insert(q.record().value("id").toString(),q.record().value("description").toString());
     }
 
-    qs = QString("SELECT uuid FROM localsets LIMIT 1 ");
+    qs = QString("SELECT uuid, serverurl FROM localsets LIMIT 1 ");
     execSQL(&q,qs);
     q.next();
     f_uuid = q.record().value("uuid").toString();
+    f_serverUrl = q.record().value("serverurl").toString();
 
     if(f_uuid.isEmpty())
         createUuid();
@@ -33,6 +35,11 @@ void CVData::getFromDB()
 QString CVData::uuid()
 {
     return f_uuid;
+}
+
+QString CVData::serverUrl()
+{
+    return f_serverUrl;
 }
 
 void CVData::setUuid(QString _uuid)

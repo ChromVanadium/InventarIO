@@ -2,71 +2,47 @@
 
 CVEvent::CVEvent()
 {
-    f_text = "";
-    f_dateTime = QDateTime::currentDateTime();
-    f_id = 0;
-    f_sid = 0;
-    f_itemId = 0;
-    f_type = 0; // 0 - авто, 1 - вручную (добавлено через диалог)
-    f_lastUpdate = QDateTime::currentDateTime().toTime_t();
-    f_uuid = QUuid::createUuid().toString();
-
-    hash0 = makeHash();
-}
-
-CVEvent::CVEvent(int _itemId, QString _text)
-{
-    f_id = 0;
-    f_sid = 0;
-    f_itemId = _itemId;
-    f_text = _text;
+    f_itemId.clear();
+    f_text.clear();
     f_dateTime = QDateTime::currentDateTime();
     f_type = 0;
+    f_unq = 0;
     f_lastUpdate = QDateTime::currentDateTime().toTime_t();
-    f_uuid = QUuid::createUuid().toString();
+    f_modified = 1;
+
+    f_id = QUuid::createUuid().toString();
 
     hash0 = makeHash();
 }
 
-CVEvent::CVEvent(int _itemId, QString _text, int _type)
+CVEvent::CVEvent(QString _itemId, QString _text, int _type)
 {
     f_itemId = _itemId;
-    f_sid = 0;
     f_text = _text;
     f_dateTime = QDateTime::currentDateTime();
     f_type = _type;
-    f_id = 0;
+    f_unq = 0;
     f_lastUpdate = QDateTime::currentDateTime().toTime_t();
-    f_uuid = QUuid::createUuid().toString();
+    f_modified = 1;
+
+    f_id = QUuid::createUuid().toString();
 
     hash0 = makeHash();
 }
 
-CVEvent::CVEvent(int _unq, int _itemId, QString _description, int _type, int _unix_time){
+CVEvent::CVEvent(int _unq, QString _id, QString _itemId, QString _description, int _type, int _unix_time, int _lastUpdate, int _modified){
+    f_id = _id;
     f_itemId = _itemId;
     f_text = _description;
     f_dateTime = QDateTime::fromTime_t(_unix_time);
     f_type = _type;
-    f_id = _unq;
-    f_sid = 0;
-    f_lastUpdate = QDateTime::currentDateTime().toTime_t();
-    f_uuid = QUuid::createUuid().toString();
-
-    hash0 = makeHash();
-}
-
-CVEvent::CVEvent(int _unq, int _sid, QString _uuid, int _itemId, QString _description, int _type, int _unix_time, int _lastUpdate)
-{
-    f_itemId = _itemId;
-    f_sid = _sid;
-    f_text = _description;
-    f_dateTime = QDateTime::fromTime_t(_unix_time);
-    f_type = _type;
-    f_id = _unq;
+    f_unq = _unq;
     f_lastUpdate = _lastUpdate;
-    f_uuid = _uuid;
-    if(f_uuid.isEmpty()){
-        f_uuid = QUuid::createUuid().toString();
+    f_modified = _modified;
+
+    f_id = _id;
+    if(f_id.isEmpty()){
+        f_id = QUuid::createUuid().toString();
         setModified(true);
         toDB();
     }
@@ -82,19 +58,19 @@ void CVEvent::setText(QString _text){
     f_text = _text;
 }
 
-int CVEvent::id(){
+QString CVEvent::id(){
     return f_id;
 }
 
-void CVEvent::setId(int _id){
+void CVEvent::setId(QString _id){
     f_id = _id;
 }
 
-int CVEvent::itemId(){
+QString CVEvent::itemId(){
     return f_itemId;
 }
 
-void CVEvent::setItemId(int _itemId){
+void CVEvent::setItemId(QString _itemId){
     f_itemId = _itemId;
 }
 
@@ -114,20 +90,7 @@ void CVEvent::setType(int _type){
     f_type = _type;
 }
 
-void CVEvent::toDB()
-{
-    QString hash1 = makeHash();
-    bool a = hash0.compare(hash1,Qt::CaseInsensitive)==0;
 
-    if(!a || f_modified==1){
-        hash0 = hash1;
-
-        if(f_id>0)
-            updateToDB();
-        else
-            insertToDB();
-    }
-}
 
 QJsonObject CVEvent::toJson()
 {
@@ -135,14 +98,12 @@ QJsonObject CVEvent::toJson()
 
     int dt = f_dateTime.toTime_t();
     json["id"] = f_id;
-    json["sid"] = f_sid;
-    json["itemid"] = f_itemId;
+    json["parent"] = f_itemId;
     json["type"] = f_type;
     json["text"] = f_text;
     json["datetime"] = dt;
     json["d"] = f_d;
     json["u"] = f_lastUpdate;
-    json["uuid"] = f_uuid;
 
     return json;
 }
@@ -157,9 +118,8 @@ void CVEvent::setModified(bool isModified)
 
 QString CVEvent::makeHash()
 {
-    QString h = QString("%1_%2_%3_%4_%5_%6_%7_%8_%9_%10_%11_%12")
+    QString h = QString("%1_%2_%3_%4_%5_%6")
             .arg(f_id)
-            .arg(f_sid)
             .arg(f_itemId)
             .arg(f_type)
             .arg(f_text)
@@ -174,21 +134,37 @@ QString CVEvent::makeHash()
     return hash;
 }
 
+void CVEvent::toDB()
+{
+    QString hash1 = makeHash();
+    bool a = hash0.compare(hash1,Qt::CaseInsensitive)==0;
+
+    if(!a || f_modified==1){
+        hash0 = hash1;
+
+        if(f_unq>0)
+            updateToDB();
+        else
+            insertToDB();
+    }
+}
+
 void CVEvent::insertToDB()
 {
     QSqlQuery q;
     QString qs;
 
-    QString bredpitt = QDateTime::currentDateTime().toString("yyyyMMddHHmmsszzz");
+    if(f_id.isEmpty())
+        f_id = QUuid::createUuid().toString();
 
-    qs = QString("INSERT INTO events(description) VALUES('%1')").arg(bredpitt);
+    qs = QString("INSERT INTO events(id) VALUES('%1')").arg(f_id);
     execSQL(qs);
 
-    qs = QString("SELECT id FROM events WHERE description LIKE '%1'").arg(bredpitt);
+    qs = QString("SELECT unq FROM events WHERE id LIKE '%1'").arg(f_id);
     execSQL(&q, qs);
 
     q.next();
-    f_id = q.record().value("id").toInt();
+    f_unq = q.record().value("unq").toInt();
 
     updateToDB();
 }
@@ -202,14 +178,14 @@ void CVEvent::updateToDB()
 
     qs = QString("UPDATE events SET "
                  "description='%2', type=%3, "
-                 "itemid=%4, unix_time=%5, u=%6, uuid='%7', modified=1 "
-                 "WHERE id=%1")
-            .arg(f_id)
+                 "parent='%4', unix_time=%5, u=%6, modified=1 "
+                 "WHERE unq=%1")
+            .arg(f_unq)
             .arg(f_text)
             .arg(f_type)
             .arg(f_itemId)
             .arg(f_dateTime.toTime_t())
-            .arg(f_lastUpdate)
-            .arg(f_uuid);
+            .arg(f_lastUpdate);
     execSQL(qs);
+    qDebug() << f_id << "updated";
 }

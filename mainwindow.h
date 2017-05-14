@@ -83,11 +83,11 @@ private:
     void addEvent(int pos);
 
     void getItems();
-    void fillItems();
+
     void fillTree();
+    void fillTree2();
 
     void fillTreeItem(QTreeWidgetItem *_wi, CVItem _item);
-    void organizeItems();
 
     void getEvents();
     void getConnections();
@@ -105,7 +105,7 @@ private:
     QJsonObject syncJson;
 
     CVData *data;
-    int colId, colRow, colType, colDesc, colVal1, colVal2, colVal3, colQR, colName;
+    int colUnq, colId, colRow, colType, colDesc, colVal1, colVal2, colVal3, colQR, colName;
 
     QStringList syncLog;
     QDateTime st0, st1, st2;

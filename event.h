@@ -15,17 +15,15 @@ class CVEvent: public CVSql, CVAlgorythm
 {
 public:
     CVEvent();
-    CVEvent(int _itemId, QString _text);
-    CVEvent(int _itemId, QString _text, int _type);
-    CVEvent(int _unq, int _itemId, QString _description, int _type, int _unix_time);
-    CVEvent(int _unq, int _sid, QString _uuid, int _itemId, QString _description, int _type, int _unix_time, int _lastUpdate);
+    CVEvent(QString _itemId,  QString _text, int _type=0);
+    CVEvent(int _unq, QString _id, QString _itemId, QString _description, int _type, int _unix_time, int _lastUpdate, int _modified);
 
     QString text();
     void setText(QString _text);
-    int id();
-    void setId(int _id);
-    int itemId();
-    void setItemId(int _itemId);
+    QString id();
+    void setId(QString _id);
+    QString itemId();
+    void setItemId(QString _itemId);
     QDateTime dateTime();
     void setDateTime(int _dateTime_unix);
     int type();
@@ -38,9 +36,9 @@ public:
 private:
     QString f_text;
     QDateTime f_dateTime;
-    int f_id, f_sid, f_itemId, f_type, f_d;
+    QString f_id, f_itemId;
+    int f_unq, f_type, f_d;
     int f_lastUpdate;
-    QString f_uuid;
     int f_modified;
 
     QString hash0;

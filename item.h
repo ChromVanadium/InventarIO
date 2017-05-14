@@ -15,13 +15,17 @@ class CVItem: public CVSql
 {
 public:
     CVItem();
-    CVItem(int _id, int _sid, QString _uuid, int _parent, int _level, QString _qr, QString _name, QString _description, CVSpecs _type,
-           QString _value1, QString _value2, QString _value3, int _lastUpdate);
+    CVItem(int _unq, QString _id, QString _parent, int _level, QString _qr, QString _name, QString _description, QString _type,
+           QString _value1, QString _value2, QString _value3, int _lastUpdate, int _modified);
 
-    int id();
-    void setId(int _id);
-    int sid();
-    void setSid(int _sid);
+    int unq();
+    void setUnq(int _unq);
+
+    QString id();
+    void setId(QString _id);
+    QString parent();
+    void setParent(QString _parent);
+
     QString name();
     void setName(QString _name);
     QString QR();
@@ -29,11 +33,10 @@ public:
     QString description();
     void setDescription(QString _description);
 
-    CVSpecs type();
-    void setType(CVSpecs _type);
+    QString type();
+    void setType(QString _type);
 
-    QString uuid();
-    void setUuid(QString _uuid);
+
 
     int level();
     void setLevel(int _level);
@@ -50,8 +53,7 @@ public:
 
     void getEvents();
     void setEvents(QList<CVEvent> _events);
-    int parent();
-    void setParent(int _parent);
+
 
     void toDB();
     void insertToDB();
@@ -70,13 +72,13 @@ public:
     QJsonObject toJson();
 
 private:
-    CVSpecs f_type;
-    int f_id, f_sid, f_parent;
+    QString f_type;
+    int f_unq;
     int f_level;
     QString f_value1, f_value2, f_value3;
     QString f_name, f_description;
     QString f_qr;
-    QString f_uuid;
+    QString f_id, f_parent;
     int f_d;
     int f_lastUpdate;
     int f_modified;

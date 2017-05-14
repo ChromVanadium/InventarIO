@@ -26,8 +26,8 @@ void CVItemDialog::setItem(CVItem _item)
     ui->edValue2->setText(f_item.value2());
     ui->edValue3->setText(f_item.value3());
 
-    for(int i=0;i<f_types.count();i++)
-        if(f_types[i].index == f_item.type().index)
+    for(int i=0;i<f_types2.count();i++)
+        if(f_item.type().compare(f_types2[i])==0)
             ui->cbType->setCurrentIndex(i);
 
     fillEvents();
@@ -54,7 +54,8 @@ void CVItemDialog::on_buttonBox_accepted()
     f_item.setValue2( ui->edValue2->text() );
     f_item.setValue3( ui->edValue3->text() );
 
-    f_item.setType(f_types[ui->cbType->currentIndex()]);
+    //f_item.setType(f_types[ui->cbType->currentIndex()]);
+    f_item.setType(f_types2[ui->cbType->currentIndex()]);
 
     accept();
 }
@@ -73,11 +74,13 @@ void CVItemDialog::fillTypes()
 {
     ui->cbType->clear();
     f_types.clear();
+    f_types2.clear();
 
     for(int i=0;i<globalData->types.count();i++)
     {
         ui->cbType->addItem(globalData->types[i].name);
         f_types.append(globalData->types[i]);
+        f_types2.append( QString::number(globalData->types[i].index) );
     }
 }
 
@@ -134,4 +137,19 @@ void CVItemDialog::fillEvents()
 void CVItemDialog::on_tableWidget_cellActivated(int row, int column)
 {
 
+}
+
+void CVItemDialog::on_btAddEvent_clicked()
+{
+    CVEvent e;
+    e.setItemId(f_item.id());
+    CVEventDialog *dlg = new CVEventDialog();
+    dlg->setEvent(e);
+
+    if(dlg->exec() == QDialog::Accepted){
+        e = dlg->event();
+        e.toDB();
+        f_item.addEvent(e);
+        fillEvents();
+    }
 }

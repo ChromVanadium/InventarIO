@@ -6,6 +6,7 @@
 #include "data.h"
 #include "sql.h"
 #include "algorythm.h"
+#include "event_dialog.h"
 
 namespace Ui {
 class CVItemDialog;
@@ -31,12 +32,15 @@ private slots:
 
     void on_tableWidget_cellActivated(int row, int column);
 
+    void on_btAddEvent_clicked();
+
 private:
     Ui::CVItemDialog *ui;
 
     CVItem f_item;
     CVData *globalData;
 
+    QStringList f_types2;
     QList<CVSpecs> f_types;
 
     void fillTypes();

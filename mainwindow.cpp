@@ -79,34 +79,34 @@ void MainWindow::onDeleteClicked()
     int row = act->objectName().toInt();
     int id = ui->tableWidget->item(row,0)->text().toInt();
 
-    for(int i=0;i<fItems.count();i++)
-        if(fItems[i].id()==id){
-            fItems[i].markToDelete();
-            fItems[i].toDB();
-        }
+//    for(int i=0;i<fItems.count();i++)
+//        if(fItems[i].id()==id){
+//            fItems[i].markToDelete();
+//            fItems[i].toDB();
+//        }
 
     ui->tableWidget->hideRow(row);
 }
 
 void MainWindow::onEventAdd()
 {
-    QAction *act = qobject_cast<QAction *>(sender());
-    int row = act->objectName().toInt();
-    int id = ui->tableWidget->item(row,0)->text().toInt();
+//    QAction *act = qobject_cast<QAction *>(sender());
+//    int row = act->objectName().toInt();
+//    int id = ui->tableWidget->item(row,0)->text().toInt();
 
-    CVEventDialog *dlg = new CVEventDialog();
-    CVEvent e;
-    e.setItemId(id);
-    dlg->setEvent(e);
-    if(dlg->exec() == QDialog::Accepted){
-        e = dlg->event();
-        e.toDB();
+//    CVEventDialog *dlg = new CVEventDialog();
+//    CVEvent e;
+//    e.setItemId(id);
+//    dlg->setEvent(e);
+//    if(dlg->exec() == QDialog::Accepted){
+//        e = dlg->event();
+//        e.toDB();
 
-        for(int i=0;i<fItems.count();i++)
-            if(fItems[i].id()==id){
-                fItems[i].events.append(e);
-            }
-    }
+//        for(int i=0;i<fItems.count();i++)
+//            if(fItems[i].id()==id){
+//                fItems[i].events.append(e);
+//            }
+//    }
 }
 
 void MainWindow::showTableWidgetContextMenu(const QPoint &pos)
@@ -178,6 +178,7 @@ void MainWindow::addItem()
 
     if(dlg->exec() == QDialog::Accepted){
         CVItem item = dlg->item();
+        item.setModified(true);
         item.toDB();
 
         CVEvent e;
@@ -186,7 +187,7 @@ void MainWindow::addItem()
         item.events.append(e);
 
         fItems.append(item);
-        fillItems();
+        fillTree();
     };
 }
 
@@ -201,25 +202,27 @@ void MainWindow::editItem(CVItem _item)
         item.toDB();
 
         for(int i=0;i<fItems.count();i++)
-            if(fItems[i].id()==item.id())
+            if(fItems[i].id().compare(item.id())==0)
                 fItems[i] = item;
-//        CVEvent e;
-//        e = CVEvent(item.id(),"Добавлено",0);
-//        e.toDB();
-//        item.events.append(e);
+        CVEvent e;
+        e = CVEvent(item.id(),"Добавлено",0);
+        e.toDB();
+        item.events.append(e);
 
-//        fItems.append(item);
-//        fillItems();
+        fItems.append(item);
+        fillTree();
     };
 }
 
 void MainWindow::editItem(QTreeWidgetItem *itm)
 {
     bool expanded = itm->isExpanded();
-    int id = itm->text(colId).toInt();
+    QString id = itm->text(colId);
+    int unq = itm->text(colUnq).toInt();
     int j = -1;
+
     for(int i=0;i<fItems.count();i++)
-        if(fItems[i].id()==id)
+        if(fItems[i].unq()==unq)
             j = i;
 
     if(j>-1){
@@ -243,6 +246,7 @@ void MainWindow::addEvent(int pos)
     CVEvent e;
     e.setItemId(fItems[pos].id());
     CVEventDialog *dlg = new CVEventDialog();
+    dlg->setTitle("событие по " + fItems[pos].name());
     dlg->setEvent(e);
 
     if(dlg->exec() == QDialog::Accepted){
@@ -250,7 +254,6 @@ void MainWindow::addEvent(int pos)
         e.toDB();
         fItems[pos].addEvent(e);
     }
-    //fItems[pos].addEvent("");
 }
 
 void MainWindow::getItems()
@@ -258,10 +261,10 @@ void MainWindow::getItems()
     QSqlQuery q;
     QString qs;
 
-    qs = QString("SELECT id, sid, parent, uuid, qr, name, description, type, value1, value2, value3, d, lvl, u "
+    qs = QString("SELECT unq, id, parent, qr, name, description, type, value1, value2, value3, d, lvl, u, modified "
                  "FROM items "
                  "WHERE d=0 "
-                 "ORDER BY lvl, id ");
+                 "ORDER BY lvl, unq ");
     execSQL(&q, qs);
     //CVEvent(0,"Запуск").toDB();
 
@@ -270,26 +273,23 @@ void MainWindow::getItems()
         CVItem itm;
         CVSpecs type;
         type = CVSpecs(data->type(q.record().value("type").toInt()),q.record().value("type").toInt());
-        itm = CVItem( q.record().value("id").toInt(),
-                      q.record().value("sid").toInt(),
-                      q.record().value("uuid").toString(),
-                      q.record().value("parent").toInt(),
+        itm = CVItem( q.record().value("unq").toInt(),
+                      q.record().value("id").toString(),
+                      q.record().value("parent").toString(),
                       q.record().value("lvl").toInt(),
                       q.record().value("qr").toString(),
                       q.record().value("name").toString(),
                       q.record().value("description").toString(),
-                      type,
+                      q.record().value("type").toString(),
                       q.record().value("value1").toString(),
                       q.record().value("value2").toString(),
                       q.record().value("value3").toString(),
-                      q.record().value("u").toInt() );
-
+                      q.record().value("u").toInt(),
+                      q.record().value("modified").toInt() );
         fItems.append(itm);
     }
 
     getEvents();
-
-    organizeItems();
 }
 
 void MainWindow::getEvents()
@@ -300,18 +300,20 @@ void MainWindow::getEvents()
     qs = QString("SELECT * FROM events WHERE d=0 ");
     execSQL(&q, qs);
     while(q.next()){
-        CVEvent e = CVEvent(q.record().value("id").toInt(),
-                            q.record().value("sid").toInt(),
-                            q.record().value("uuid").toString(),
-                            q.record().value("itemid").toInt(),
+        CVEvent e = CVEvent(q.record().value("unq").toInt(),
+                            q.record().value("id").toString(),
+                            q.record().value("parent").toString(),
                             q.record().value("description").toString(),
                             q.record().value("type").toInt(),
                             q.record().value("unix_time").toInt(),
-                            q.record().value("u").toInt());
+                            q.record().value("u").toInt(),
+                            q.record().value("modified").toInt());
 
         for(int i=0;i<fItems.count();i++){
-            if(fItems[i].id()==e.itemId())
+            if(fItems[i].id().compare(e.itemId())==0){
                 fItems[i].addEvent(e);
+            }
+
         }
     }
 }
@@ -341,9 +343,9 @@ int MainWindow::typeOfItem(int itemId)
 {
     int t = 0;
 
-    for(int i=0;i<fItems.count();i++)
-        if(fItems[i].id()==itemId)
-            t = fItems[i].type().index;
+//    for(int i=0;i<fItems.count();i++)
+//        if(fItems[i].id()==itemId)
+//            t = fItems[i].type().index;
 
     return t;
 }
@@ -352,9 +354,9 @@ int MainWindow::parentOfItem(int itemId)
 {
     int p = 0;
 
-    for(int i=0;i<fItems.count();i++)
-        if(fItems[i].id()==itemId)
-            p = fItems[i].parent();
+//    for(int i=0;i<fItems.count();i++)
+//        if(fItems[i].id()==itemId)
+//            p = fItems[i].parent();
 
     return p;
 }
@@ -362,10 +364,10 @@ int MainWindow::parentOfItem(int itemId)
 bool MainWindow::indexOfItem(int itemId)
 {
     int t = 0;
-    for(int i=0;i<fItems.count();i++){
-        if(fItems[i].id()==itemId)
-            t = i;
-    }
+//    for(int i=0;i<fItems.count();i++){
+//        if(fItems[i].id()==itemId)
+//            t = i;
+//    }
     return t;
 }
 
@@ -416,78 +418,12 @@ void MainWindow::onFilterCheckBoxChanged()
     }
 }
 
-void MainWindow::fillItems()
-{
-    ui->tableWidget->setVisible(false);
-    fillTree();
-    return;
-
-    ui->tableWidget->clear();
-    QStringList labels;
-    labels << "id" << "тип" << "QR" << "Описание" << "1" << "2" << "3" << "-";
-    ui->tableWidget->setColumnCount(labels.count());
-    ui->tableWidget->setHorizontalHeaderLabels(labels);
-    ui->tableWidget->setRowCount(fItems.count());
-
-    colId = 0;
-    colType = 1;
-    colDesc = 3;
-    colVal1 = 4;
-    colVal2 = 5;
-    colVal3 = 6;
-    colQR = 2;
-
-    ui->tableWidget->setColumnWidth(colId,24);
-    ui->tableWidget->setColumnWidth(colType,120);
-    ui->tableWidget->setColumnWidth(colQR,80);
-    ui->tableWidget->setColumnWidth(colDesc,240);
-    ui->tableWidget->setColumnWidth(colVal1,240);
-    ui->tableWidget->setColumnWidth(colVal2,240);
-    ui->tableWidget->setColumnWidth(colVal3,120);
-
-    for(int i=0;i<fItems.count();i++){
-        QTableWidgetItem *wId = new QTableWidgetItem();
-        wId->setText( QString("%1").arg(fItems[i].id()) );
-        ui->tableWidget->setItem(i,colId,wId);
-
-        QTableWidgetItem *wQR = new QTableWidgetItem();
-        wQR->setText( QString("%1").arg(fItems[i].QR()) );
-        ui->tableWidget->setItem(i,colQR,wQR);
-
-//        QTableWidgetItem *wName = new QTableWidgetItem();
-//        wName->setText( QString("%1").arg(fItems[i].name()) );
-//        ui->tableWidget->setItem(i,2,wName);
-
-        QTableWidgetItem *wDescription = new QTableWidgetItem();
-        wDescription->setText( QString("%1").arg(fItems[i].description()) );
-        ui->tableWidget->setItem(i,colDesc,wDescription);
-
-        QTableWidgetItem *wType = new QTableWidgetItem();
-        wType->setText( QString("%1").arg(fItems[i].type().name) );
-        ui->tableWidget->setItem(i,colType,wType);
-
-        QTableWidgetItem *wV1 = new QTableWidgetItem();
-        wV1->setText( QString("%1").arg(fItems[i].value1()) );
-        ui->tableWidget->setItem(i,colVal1,wV1);
-        QTableWidgetItem *wV2 = new QTableWidgetItem();
-        wV2->setText( QString("%1").arg(fItems[i].value2()) );
-        ui->tableWidget->setItem(i,colVal2,wV2);
-        QTableWidgetItem *wV3 = new QTableWidgetItem();
-        wV3->setText( QString("%1").arg(fItems[i].value3()) );
-        ui->tableWidget->setItem(i,colVal3,wV3);
-
-        if(fItems[i].parent()>0)
-            ui->tableWidget->setRowHidden(i,!ui->ckShowChilds->isChecked());
-
-    }
-
-
-    ui->tableWidget->resizeRowsToContents();
-    ui->tableWidget->hideColumn(colId);
-}
 
 void MainWindow::fillTree()
 {
+    fillTree2();
+    return;
+/*
     tree->clear();
     QStringList labels;
     labels << "Название" << "id" << "Инв.№" << "тип" << "1" << "2" << "3" << "-";
@@ -549,26 +485,87 @@ void MainWindow::fillTree()
 
     tree->hideColumn(colId);
     tree->expandAll();
+    */
+}
+
+void MainWindow::fillTree2()
+{
+    tree->clear();
+    QStringList labels;
+    labels << "Название" << "unq" << "uuid" << "Инв.№" << "тип" << "1" << "2" << "3" << "-";
+    tree->setColumnCount(labels.count());
+    tree->setHeaderLabels(labels);
+
+    colUnq = 1;
+    colId = 2;
+    colType = 4;
+    colName = 0;
+    colVal1 = 5;
+    colVal2 = 6;
+    colVal3 = 7;
+    colQR = 3;
+
+    tree->setColumnCount(labels.count());
+    tree->setHeaderLabels(labels);
+
+    QList<CVItem> tempItems = fItems;
+
+    // сначала пробегаем по безродительским итемам
+    for(int i=0;i<tempItems.count();i++){
+        if(tempItems[i].parent().isEmpty()){
+            QTreeWidgetItem *tw = new QTreeWidgetItem();
+            tree->addTopLevelItem(tw);
+            fillTreeItem(tw, tempItems[i]);
+            tempItems.takeAt(i); i--;
+        }
+    }
+
+    // далее идем по оставшимся "детям"
+    int looper = 0;
+    while(tempItems.count()>0){
+        for(int i=0;i<tempItems.count();i++){
+            QTreeWidgetItemIterator it(tree);
+                while (*it) {
+                    QTreeWidgetItem *wp = (*it);
+                    QString id = wp->text(colId);
+                    if (id.compare(tempItems[i].parent())==0){
+                        QTreeWidgetItem *tw = new QTreeWidgetItem();
+                        wp->addChild(tw);
+                        fillTreeItem(tw, tempItems[i]);
+                        tempItems.takeAt(i); i--;
+                    }
+                    ++it;
+                }
+        }
+        looper++;                       /* за случай зацикливания */
+        if(looper==1000) break;         /*                        */
+    }
+
+    tree->setColumnWidth(colName,260);
+    tree->setColumnWidth(colType,80);
+    tree->setColumnWidth(colVal1,120);
+    tree->setColumnWidth(colVal2,120);
+    tree->setColumnWidth(colVal3,120);
+    tree->setColumnWidth(colQR,50);
+
+    tree->hideColumn(colId);
+    tree->hideColumn(colUnq);
+    tree->expandAll();
 }
 
 void MainWindow::fillTreeItem(QTreeWidgetItem *_wi, CVItem _item)
 {
-    _wi->setText(colId,   QString("%1").arg(_item.id()) );
+    _wi->setText(colUnq,  QString("%1").arg(_item.unq()) );
+    _wi->setText(colId,  QString("%1").arg(_item.id()) );
     _wi->setText(colQR,   QString("%1").arg(_item.QR()) );
     _wi->setText(colName, QString("%1").arg(_item.name()) );
-    _wi->setText(colType, QString("%1").arg(_item.type().name) );
+    _wi->setText(colType, QString("%1").arg( data->type(_item.type().toInt()) ) );
     _wi->setText(colVal1, QString("%1").arg(_item.value1()) );
     _wi->setText(colVal2, QString("%1").arg(_item.value2()) );
     _wi->setText(colVal3, QString("%1").arg(_item.value3()) );
 
     _wi->setTextAlignment(colQR,Qt::AlignVCenter|Qt::AlignRight);
 }
-
-void MainWindow::organizeItems()
-{
-
-}
-
 
 void MainWindow::on_tableWidget_cellActivated(int row, int column)
 {
@@ -581,17 +578,13 @@ void MainWindow::on_tableWidget_cellActivated(int row, int column)
         item.toDB();
 
         fItems[row] = item;
-//        fItems.append(item);
-        fillItems();
+        fillTree();
     };
 }
-
-
 
 void MainWindow::on_btRefresh_clicked()
 {
     getItems();
-    //fillItems();
     fillTree();
 }
 
@@ -617,49 +610,44 @@ void MainWindow::onItemActivated(QTreeWidgetItem *it, int col)
 {
     editItem(it);
     return;
-
-//    int id = it->text(colId).toInt();
-//    int j = -1;
-//    for(int i=0;i<fItems.count();i++)
-//        if(fItems[i].id()==id)
-//            j = i;
-
-//    if(j>-1)
-//        editItem(fItems[j]);
 }
 
 void MainWindow::on_tableWidget_cellClicked(int row, int column)
 {
-    if(parentSelecting){
-        int r = row;
-        parentId = ui->tableWidget->item(r,0)->text().toInt();
-        for(int i=0;i<fItems.count();i++){
-            if(fItems[i].id()==childId){
-                fItems[i].setParent(parentId);
-                fItems[i].toDB();
-            }
-        }
-        qDebug() << "parentSelecting" << parentSelecting << "childId" << childId << "parentId" << parentId;
-        parentSelecting = false;
-        childId = 0;
-        parentId = 0;
-    }
+//    if(parentSelecting){
+//        int r = row;
+//        parentId = ui->tableWidget->item(r,0)->text().toInt();
+//        for(int i=0;i<fItems.count();i++){
+//            if(fItems[i].id()==childId){
+//                fItems[i].setParent(parentId);
+//                fItems[i].toDB();
+//            }
+//        }
+//        qDebug() << "parentSelecting" << parentSelecting << "childId" << childId << "parentId" << parentId;
+//        parentSelecting = false;
+//        childId = 0;
+//        parentId = 0;
+//    }
 }
 
 void MainWindow::onDragAndDropped(int from, int into)
 {
-    qDebug() << "item" << from << "dropped into" << into;
+    //qDebug() << "item" << from << "dropped into" << into;
     int f=0, t=0;
     for(int i=0;i<fItems.count();i++){
         if(fItems[i].QR().toInt() == from) f = i;
         if(fItems[i].QR().toInt() == into) t = i;
     }
 
-    if(fItems[f].id()!=fItems[t].id()){
+    if(fItems[f].id().compare(fItems[t].id())!=0){
         fItems[f].setParent(fItems[t].id());
         fItems[f].toDB();
         fItems[f].addEvent( QString("Перенесен в подчинение %1").arg(into) );
         fItems[t].addEvent( QString("Добавлен подчиненный %1").arg(from) );
+    }
+    if(into == -1){
+        fItems[f].setParent("");
+        fItems[f].toDB();
     }
     tree->expandAll();
 }
@@ -722,40 +710,40 @@ void MainWindow::sendNewToServer(QByteArray json)
 
 
 void MainWindow::replyfinished(QNetworkReply *reply){
-    QByteArray content = reply->readAll();
-    qDebug() << content;
+//    QByteArray content = reply->readAll();
+//    qDebug() << content;
 
-    QJsonDocument json(QJsonDocument::fromJson(content));
-    qDebug() << "\n\n";
-    qDebug() << json;
+//    QJsonDocument json(QJsonDocument::fromJson(content));
+//    qDebug() << "\n\n";
+//    qDebug() << json;
 
-    QJsonObject j1 = json.object();
-    qDebug() << "\n\n";
-    int done = j1["done"].toInt();
-    QJsonArray newSids = j1["newSids"].toArray();
+//    QJsonObject j1 = json.object();
+//    qDebug() << "\n\n";
+//    int done = j1["done"].toInt();
+//    QJsonArray newSids = j1["newSids"].toArray();
 
-    for(int j=0;j<newSids.count();j++){
-        QJsonObject obj = newSids[j].toObject();
-        qDebug() << obj["uuid"].toString() << " =>" << obj["sid"].toInt();
-        for(int i=0;i<fItems.count();i++){
-            if(fItems[i].uuid().compare(obj["uuid"].toString(),Qt::CaseInsensitive)==0){
-                fItems[i].setSid(obj["sid"].toInt());
-                fItems[i].updateToDB();
-            }
+//    for(int j=0;j<newSids.count();j++){
+//        QJsonObject obj = newSids[j].toObject();
+//        qDebug() << obj["uuid"].toString() << " =>" << obj["sid"].toInt();
+//        for(int i=0;i<fItems.count();i++){
+//            if(fItems[i].uuid().compare(obj["uuid"].toString(),Qt::CaseInsensitive)==0){
+//                fItems[i].setSid(obj["sid"].toInt());
+//                fItems[i].updateToDB();
+//            }
 
-        }
-    }
-    ui->lbUpdated->setText( QString("last sync %1").arg(QDateTime::currentDateTime().toString("hh:mm.ss")) );
+//        }
+//    }
+//    ui->lbUpdated->setText( QString("last sync %1").arg(QDateTime::currentDateTime().toString("hh:mm.ss")) );
     //qDebug() << done << ar;
 }
 
 
 void MainWindow::on_btAddEvent_clicked()
 {
-    int selId = tree->currentItem()->text(colId).toInt();
+    QString selId = tree->currentItem()->text(colId);
     int pos = -1;
     for(int i=0;i<fItems.count();i++){
-        if(fItems[i].id()==selId)
+        if(fItems[i].id().compare(selId)==0)
             pos = i;
     }
     if(pos>-1)
@@ -776,31 +764,32 @@ void MainWindow::on_actCreate_triggered()
         db.open();
         QSqlQuery query;
         query.exec("CREATE TABLE events ( "
-                   "id	INTEGER PRIMARY KEY AUTOINCREMENT, "
-                   "sid	INTEGER DEFAULT 0, "
-                   "itemid	INTEGER, "
+                   "unq	INTEGER, "
+                   "id	TEXT, "                                         /* UUID */
+                   "parent	TEXT, "                                     /* UUID */
                    "description	TEXT, "
                    "unix_time	INTEGER, "
-                   "type	INTEGER, "
+                   "type	INTEGER DEFAULT 0, "                        /* 0 - ручное, 1 - авто */
                    "d	INTEGER DEFAULT 0, "
                    "u	INTEGER, "
-                   "uuid	TEXT, "
-                   "modified	INTEGER DEFAULT 1 "
-                   ")");
+                   "modified	INTEGER DEFAULT 1,"
+                   "sid	INTEGER DEFAULT 0, "
+                   "PRIMARY KEY(unq,id) "
+                   ") ");
         query.exec("CREATE TABLE fields_labels ( "
-                   "type	INTEGER, "
+                   "unq	INTEGER PRIMARY KEY AUTOINCREMENT, "
                    "label1	TEXT, "
                    "label2	TEXT, "
                    "label3	TEXT, "
                    "u	INTEGER "
-                   ")");
+                   ") ");
         query.exec("CREATE TABLE items ( "
-                   "id	INTEGER PRIMARY KEY AUTOINCREMENT, "
-                   "sid	INTEGER DEFAULT 0, "
-                   "parent	INTEGER DEFAULT 0, "
+                   "unq	INTEGER, "
+                   "id	TEXT, "                                         /* UUID */
+                   "parent	TEXT, "                                     /* UUID */
                    "name	TEXT, "
                    "description	TEXT, "
-                   "type	INTEGER DEFAULT 0, "
+                   "type	TEXT, "
                    "value1	TEXT, "
                    "value2	TEXT, "
                    "value3	TEXT, "
@@ -808,19 +797,27 @@ void MainWindow::on_actCreate_triggered()
                    "d	INTEGER DEFAULT 0, "
                    "qr	TEXT, "
                    "u	INTEGER, "
-                   "uuid	TEXT, "
-                   "modified	INTEGER DEFAULT 1 "
-                   ")");
+                   "modified	INTEGER DEFAULT 1, "
+                   "sid	INTEGER DEFAULT 0, "
+                   "PRIMARY KEY(unq,id) "
+                   ") ");
         query.exec("CREATE TABLE localsets ( "
                    "uuid	TEXT, "
                    "timedelta	INTEGER, "
-                   "lastservertime	INTEGER "
-                   ")");
+                   "lastservertime	INTEGER, "
+                   "serverurl   TEXT"
+                   ") ");
         query.exec("CREATE TABLE types ( "
-                   "id	INTEGER PRIMARY KEY AUTOINCREMENT, "
+                   "unq	INTEGER PRIMARY KEY AUTOINCREMENT, "
+                   "id	TEXT, "
                    "description	TEXT, "
-                   "u	INTEGER, "
-                   ")");
+                   "u	INTEGER "
+                   ") ");
+
+        query.exec( QString("INSERT INTO localsets (uuid, timedelta, lastservertime, serverurl) "
+                    "VALUES('%1',0,0,'%2')")
+                    .arg(data->uuid())
+                    .arg("http://193.150.105.40:16980/inventario/sendNew.php") );
 
         if(openDB(text)){
             data->getFromDB();
@@ -885,6 +882,8 @@ void MainWindow::sync()
      4.2. Внести изменения, полученные с сервера, в локальную базу
      */
 
+    ui->lbUpdated->setText("sending to serva");
+
     st0 = QDateTime::currentDateTime();
     st1 = st0;
     syncLog.append( QString("sync started at %1").arg(st0.toString("hh:mm:ss.zzz")) );
@@ -892,26 +891,15 @@ void MainWindow::sync()
     QSqlQuery q;
     QString qs;
 
-    qs = QString("SELECT MAX(sid) AS sid FROM items");
-    execSQL(&q,qs);
-    q.next();
-    int maxItemsSid = q.record().value("sid").toInt();
-
-    qs = QString("SELECT MAX(sid) AS sid FROM events");
-    execSQL(&q,qs);
-    q.next();
-    int maxEventsSid = q.record().value("sid").toInt();
-
     qs = QString("SELECT lastservertime FROM localsets");
     execSQL(&q,qs);
     q.next();
     int lastServerTime = q.record().value("lastservertime").toInt();
 
-
     // таблица items
     // выборка вновь внесенных данных (п.1)
     // выборка измененных локально данных (п.2)
-    qs = QString("SELECT id, sid, parent, uuid, qr, name, description, type, value1, value2, value3, d, lvl, u "
+    qs = QString("SELECT id, parent, qr, name, description, type, value1, value2, value3, d, lvl, u "
                  "FROM items "
                  "WHERE modified=1");
     execSQL(&q, qs);
@@ -920,20 +908,20 @@ void MainWindow::sync()
 
     while(q.next()){
         QJsonObject json;
-        json["id"] = q.record().value("id").toInt();
+        json["id"] = q.record().value("id").toString();
         json["sid"] = q.record().value("sid").toInt();
         json["name"] = q.record().value("name").toString();
         json["description"] = q.record().value("description").toString();
-        json["type"] = q.record().value("type").toInt();
+        json["type"] = q.record().value("type").toString();
         json["value1"] = q.record().value("value1").toString();
         json["value2"] = q.record().value("value2").toString();
         json["value3"] = q.record().value("value3").toString();
         json["d"] = q.record().value("d").toInt();
         json["qr"] = q.record().value("qr").toString();
-        json["parent"] = q.record().value("parent").toInt();
+        json["parent"] = q.record().value("parent").toString();
         json["level"] = q.record().value("lvl").toInt();
         json["u"] = q.record().value("u").toInt();
-        json["uuid"] = q.record().value("uuid").toString();
+
         itemsJson.append(json);
     }
 
@@ -943,27 +931,23 @@ void MainWindow::sync()
     execSQL(&q, qs);
     while(q.next()){
         QJsonObject json;
-        json["id"] = q.record().value("id").toInt();
+        json["id"] = q.record().value("id").toString();
         json["sid"] = q.record().value("sid").toInt();
-        json["itemid"] = q.record().value("itemin").toInt();
+        json["parent"] = q.record().value("parent").toString();
         json["type"] = q.record().value("type").toInt();
         json["text"] = q.record().value("description").toString();
         json["datetime"] = q.record().value("unix_time").toInt();
         json["d"] = q.record().value("d").toInt();
         json["u"] = q.record().value("u").toInt();
-        json["uuid"] = q.record().value("uuid").toString();
         eventsJson.append(json);
     }
 
     int dt = QDateTime::currentDateTime().toTime_t();
-    syncJson["items"] = itemsJson;
-    syncJson["events"] = eventsJson;
+    syncJson["new_items"] = itemsJson;
+    syncJson["new_events"] = eventsJson;
     syncJson["source_id"] = data->uuid();
     syncJson["comp_time"] = dt;
     syncJson["last_sync"] = lastServerTime;
-    syncJson["maxItemsSid"] = maxItemsSid;
-    syncJson["maxEventsSid"] = maxEventsSid;
-    //syncJson["last_update"] = dt;
 
     st2 = QDateTime::currentDateTime();
     syncLog.append( QString("created json to send to the server in %1 msecs").arg(st1.msecsTo(st2)) );
@@ -971,9 +955,8 @@ void MainWindow::sync()
 
     QJsonDocument doc(syncJson);
     QByteArray strJson = doc.toJson();
-qDebug() << doc << "\n" << strJson;
-
-    QString urlo = QString("http://193.150.105.40:16980/inventario/sendNew.php");
+qDebug() << "sending:\n" << doc;
+    QString urlo = QString(data->serverUrl());
 
     QNetworkAccessManager *manager = new QNetworkAccessManager(this);
     QUrl url(urlo);
@@ -982,7 +965,7 @@ qDebug() << doc << "\n" << strJson;
 
     manager->post(request, "json=" + strJson);
 
-
+    ui->lbUpdated->setText("receiving from serva");
 
     connect(manager, SIGNAL(finished(QNetworkReply *)), this, SLOT(syncReplyFinished(QNetworkReply *)));
     connect(manager, SIGNAL(finished(QNetworkReply *)), manager, SLOT(deleteLater()));
@@ -994,9 +977,11 @@ void MainWindow::syncReplyFinished(QNetworkReply *reply)
     syncLog.append( QString("received response from server in %1 msecs").arg(st1.msecsTo(st2)) );
     st1 = st2;
 
+    ui->lbUpdated->setText("processing");
+
     QByteArray content = reply->readAll();
-//    qDebug() << "\nreceiving:";
-//    qDebug() << content;
+    qDebug() << "\nreceiving:";
+    qDebug() << content;
 
     QJsonDocument json(QJsonDocument::fromJson(content));
 //    qDebug() << "\n";
@@ -1012,11 +997,12 @@ void MainWindow::syncReplyFinished(QNetworkReply *reply)
     for(int j=0;j<newItemsSids.count();j++){
         QJsonObject obj = newItemsSids[j].toObject();
         QString qs = QString("UPDATE items SET "
-                             "sid=%1, u=%2, modified=0 WHERE uuid LIKE '%3'")
-                .arg(obj["sid"].toInt())
+                             "u=%1, sid=%3, modified=0 WHERE id LIKE '%2'")
                 .arg(obj["u"].toInt())
-                .arg(obj["uuid"].toString());
+                .arg(obj["id"].toString())
+                .arg(obj["sid"].toInt());
         execSQL(qs);
+qDebug() << qs;
     }
 
     /* получаем sid от отправленных данных в таблицу events */
@@ -1024,11 +1010,12 @@ void MainWindow::syncReplyFinished(QNetworkReply *reply)
     for(int j=0;j<newEventsSids.count();j++){
         QJsonObject obj = newEventsSids[j].toObject();
         QString qs = QString("UPDATE events SET "
-                             "sid=%1, u=%2, modified=0 WHERE uuid LIKE '%3'")
-                .arg(obj["sid"].toInt())
+                             "u=%1, sid=%3, modified=0 WHERE id LIKE '%2'")
                 .arg(obj["u"].toInt())
-                .arg(obj["uuid"].toString());
+                .arg(obj["id"].toString())
+                .arg(obj["sid"].toInt());
         execSQL(qs);
+qDebug() << qs;
     }
 
     /* получаем новые данные из items внесенные извне */
@@ -1039,22 +1026,38 @@ void MainWindow::syncReplyFinished(QNetworkReply *reply)
         CVItem itm;
         CVSpecs type;
         type = CVSpecs(data->type(obj["type"].toInt()),obj["type"].toInt());
+
         itm = CVItem( 0,
-                      obj["sid"].toInt(),
-                      obj["uuid"].toString(),
-                      obj["parent"].toInt(),
+                      obj["id"].toString(),
+                      obj["parent"].toString(),
                       obj["lvl"].toInt(),
                       obj["qr"].toString(),
                       obj["name"].toString(),
                       obj["description"].toString(),
-                      type,
+                      obj["type"].toString(),
                       obj["value1"].toString(),
                       obj["value2"].toString(),
                       obj["value3"].toString(),
-                      obj["u"].toInt() );
-        itm.setModified(true);
+                      obj["u"].toInt(),
+                      0);
         itm.toDB();
-        fItems.append(itm);
+        //fItems.append(itm);
+    }
+
+    /* получаем новые данные из items внесенные извне */
+    QJsonArray newEventsFromAnotherPlace = j1["newEventsFromAnotherPlace"].toArray();
+    for(int j=0;j<newEventsFromAnotherPlace.count();j++){
+        QJsonObject obj = newEventsFromAnotherPlace[j].toObject();
+//CVEvent(int _unq, QString _id, QString _itemId, QString _description, int _type, int _unix_time, int _lastUpdate, int _modified);
+        CVEvent e = CVEvent(0,
+                            obj["id"].toString(),
+                            obj["parent"].toString(),
+                            obj["description"].toString(),
+                            obj["type"].toInt(),
+                            obj["time"].toInt(),
+                            obj["u"].toInt(),
+                            0);
+        e.toDB();
     }
 
     QString qs = QString("UPDATE localsets SET lastservertime=%1").arg(serverTime);
@@ -1068,10 +1071,10 @@ void MainWindow::syncReplyFinished(QNetworkReply *reply)
 
     ui->lbUpdated->setText( QString("last sync %1").arg(QDateTime::currentDateTime().toString("hh:mm:ss")) );
 
-    qDebug() << syncLog;
+    //qDebug() << syncLog;
 
     getItems();
-    getEvents();
+    //getEvents();
     fillTree();
 }
 

@@ -29,6 +29,11 @@ CVEvent CVEventDialog::event()
     return f_event;
 }
 
+void CVEventDialog::setTitle(QString _title)
+{
+    setTitle(_title);
+}
+
 void CVEventDialog::on_buttonBox_accepted()
 {
     f_event.setText(ui->textEdit->toPlainText());
@@ -37,5 +42,6 @@ void CVEventDialog::on_buttonBox_accepted()
     dt.setTime( ui->dtTime->time() );
     f_event.setDateTime(dt.toTime_t());
     f_event.setType(1);
+    f_event.setModified(true);
     accept();
 }

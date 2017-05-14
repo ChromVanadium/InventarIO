@@ -37,7 +37,7 @@ void CVTreeWidget::dropEvent(QDropEvent *event)
         stream >> row >> col >> roleDataMap;
         QString dropped = roleDataMap[0].toString();
 
-        if(col==2) {
+        if(col==3) {
             qDebug() << event->pos();
                 from = roleDataMap[0].toString();
                 if(this->itemAt(event->pos())!=NULL)

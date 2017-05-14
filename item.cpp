@@ -2,9 +2,9 @@
 
 CVItem::CVItem()
 {
-    f_parent = 0;
-    f_id = 0;
-    f_sid = 0;
+    f_parent = "";
+    f_id = QUuid::createUuid().toString();
+
     f_name = "";
     f_description = "";
     f_qr = "";
@@ -15,18 +15,14 @@ CVItem::CVItem()
     f_value3 = "";
     f_modified = 1;
 
-    f_uuid = QUuid::createUuid().toString();
-
     events.clear();
 
     hash0 = makeHash();
-    //childItems.clear();
 }
 
-CVItem::CVItem(int _id, int _sid, QString _uuid, int _parent, int _level, QString _qr, QString _name, QString _description, CVSpecs _type, QString _value1, QString _value2, QString _value3, int _lastUpdate)
+CVItem::CVItem(int _unq, QString _id, QString _parent, int _level, QString _qr, QString _name, QString _description, QString _type, QString _value1, QString _value2, QString _value3, int _lastUpdate, int _modified)
 {
-    f_id = _id;
-    f_sid = _sid;
+    f_unq = _unq;
     f_qr = _qr;
     f_parent = _parent;
     f_name = _name;
@@ -38,29 +34,20 @@ CVItem::CVItem(int _id, int _sid, QString _uuid, int _parent, int _level, QStrin
     f_d = 0;
     f_level = _level;
     f_lastUpdate = _lastUpdate;
-    f_uuid = _uuid;
+    f_id = _id;
     events.clear();
     f_modified = 0;
-    //childItems.clear();
+
     hash0 = makeHash();
+    f_modified = _modified;
 }
 
-int CVItem::id(){
-    return f_id;
+int CVItem::unq(){
+    return f_unq;
 }
 
-void CVItem::setId(int _id){
-    f_id = _id;
-}
-
-int CVItem::sid()
-{
-    return f_sid;
-}
-
-void CVItem::setSid(int _sid)
-{
-    f_sid = _sid;
+void CVItem::setUnq(int _unq){
+    f_unq = _unq;
 }
 
 QString CVItem::name(){
@@ -89,22 +76,22 @@ void CVItem::setDescription(QString _description){
     f_description = _description;
 }
 
-CVSpecs CVItem::type(){
+QString CVItem::type(){
     return f_type;
 }
 
-void CVItem::setType(CVSpecs _type){
+void CVItem::setType(QString _type){
     f_type = _type;
 }
 
-QString CVItem::uuid()
+QString CVItem::id()
 {
-    return f_uuid;
+    return f_id;
 }
 
-void CVItem::setUuid(QString _uuid)
+void CVItem::setId(QString _id)
 {
-    f_uuid = _uuid;
+    f_id = _id;
 }
 
 int CVItem::level(){
@@ -158,38 +145,20 @@ void CVItem::setLastUpdate(int _unixDateTime)
 
 void CVItem::getEvents()
 {
-
+    // TODO: удалить?
 }
 
-int CVItem::parent()
+QString CVItem::parent()
 {
     return f_parent;
 }
 
-void CVItem::setParent(int _parent)
+void CVItem::setParent(QString _parent)
 {
     f_parent = _parent;
 }
 
-void CVItem::toDB()
-{
-    QString hash1 = makeHash();
-    bool a = hash0.compare(hash1,Qt::CaseInsensitive)==0;
 
-    if(!a || f_modified==1){
-        hash0 = hash1;
-
-        if(f_id>0)
-            updateToDB();
-        else
-            insertToDB();
-    }
-}
-
-void CVItem::markToDelete()
-{
-    f_d = 1-f_d;
-}
 
 void CVItem::setModified(bool isModified)
 {
@@ -201,7 +170,7 @@ void CVItem::setModified(bool isModified)
 
 void CVItem::addEvent(QString _eventText)
 {
-    CVEvent e = CVEvent(f_id, _eventText);
+    CVEvent e = CVEvent(f_id, _eventText, 0);
     e.toDB();
     events.append(e);
 }
@@ -232,10 +201,9 @@ QJsonObject CVItem::toJson()
     QJsonObject json;
 
     json["id"] = f_id;
-    json["sid"] = f_sid;
     json["name"] = f_name;
     json["description"] = f_description;
-    json["type"] = f_type.index;
+    json["type"] = f_type;
     json["value1"] = f_value1;
     json["value2"] = f_value2;
     json["value3"] = f_value3;
@@ -244,7 +212,6 @@ QJsonObject CVItem::toJson()
     json["parent"] = f_parent;
     json["level"] = f_level;
     json["u"] = f_lastUpdate;
-    json["uuid"] = f_uuid;
 
     return json;
 }
@@ -255,7 +222,7 @@ QString CVItem::makeHash()
             .arg(f_id)
             .arg(f_name)
             .arg(f_description)
-            .arg(f_type.index)
+            .arg(f_type)
             .arg(f_value1)
             .arg(f_value2)
             .arg(f_value3)
@@ -272,21 +239,41 @@ QString CVItem::makeHash()
     return hash;
 }
 
+void CVItem::toDB()
+{
+    QString hash1 = makeHash();
+    bool a = hash0.compare(hash1,Qt::CaseInsensitive)==0;
+
+    if(!a || f_modified==1){
+        hash0 = hash1;
+
+        if(f_unq>0)
+            updateToDB();
+        else
+            insertToDB();
+    }
+}
+
+void CVItem::markToDelete()
+{
+    f_d = 1-f_d;
+}
+
 void CVItem::insertToDB()
 {
     QSqlQuery q;
     QString qs;
 
-    QString bredpitt = QDateTime::currentDateTime().toString("yyyyMMddHHmmsszzz");
+    //QString bredpitt = QDateTime::currentDateTime().toString("yyyyMMddHHmmsszzz");
 
-    qs = QString("INSERT INTO items(value3) VALUES('%1')").arg(bredpitt);
+    qs = QString("INSERT INTO items(id) VALUES('%1')").arg(f_id);
     execSQL(qs);
 
-    qs = QString("SELECT id FROM items WHERE value3 LIKE '%1'").arg(bredpitt);
+    qs = QString("SELECT unq FROM items WHERE id LIKE '%1'").arg(f_id);
     execSQL(&q, qs);
 
     q.next();
-    f_id = q.record().value("id").toInt();
+    f_unq = q.record().value("unq").toInt();
 
     updateToDB();
 }
@@ -298,18 +285,18 @@ void CVItem::updateToDB()
 
     f_lastUpdate = QDateTime::currentDateTime().toTime_t();
 
-    if(f_uuid.isEmpty())
-        f_uuid = QUuid::createUuid().toString();
+    if(f_id.isEmpty())
+        f_id = QUuid::createUuid().toString();
 
     qs = QString("UPDATE items SET "
                  "name='%2', description='%3', "
                  "type=%4, "
-                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent=%10, lvl=%11, u=%12, uuid='%13', sid=%14, modified=1 "
-                 "WHERE id=%1")
-            .arg(f_id)
+                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent='%10', lvl=%11, u=%12, modified=1 "
+                 "WHERE unq=%1")
+            .arg(f_unq)
             .arg(f_name.remove("'"))
             .arg(f_description.remove("'"))
-            .arg(f_type.index)
+            .arg(f_type)
             .arg(f_value1.remove("'"))
             .arg(f_value2.remove("'"))
             .arg(f_value3.remove("'"))
@@ -317,10 +304,8 @@ void CVItem::updateToDB()
             .arg(f_qr.remove("'"))
             .arg(f_parent)
             .arg(f_level)
-            .arg(f_lastUpdate)
-            .arg(f_uuid)
-            .arg(f_sid);
+            .arg(f_lastUpdate);
     execSQL(qs);
-    qDebug() << "updated";
+    qDebug() << f_id << "updated";
 }
 
