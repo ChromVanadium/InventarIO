@@ -4,7 +4,7 @@ CVItem::CVItem()
 {
     f_parent = "";
     f_id = QUuid::createUuid().toString();
-
+    f_sid = 0;
     f_name = "";
     f_description = "";
     f_qr = "";
@@ -14,6 +14,7 @@ CVItem::CVItem()
     f_value2 = "";
     f_value3 = "";
     f_modified = 1;
+    f_unq = 0;
 
     events.clear();
 
@@ -24,6 +25,7 @@ CVItem::CVItem(int _unq, QString _id, QString _parent, int _level, QString _qr, 
 {
     f_unq = _unq;
     f_qr = _qr;
+    f_sid = 0;
     f_parent = _parent;
     f_name = _name;
     f_description = _description;
@@ -36,7 +38,28 @@ CVItem::CVItem(int _unq, QString _id, QString _parent, int _level, QString _qr, 
     f_lastUpdate = _lastUpdate;
     f_id = _id;
     events.clear();
-    f_modified = 0;
+
+    hash0 = makeHash();
+    f_modified = _modified;
+}
+
+CVItem::CVItem(int _unq, QString _id, QString _parent, int _level, QString _qr, QString _name, QString _description, QString _type, QString _value1, QString _value2, QString _value3, int _lastUpdate, int _modified, int _sid)
+{
+    f_unq = _unq;
+    f_qr = _qr;
+    f_sid = _sid;
+    f_parent = _parent;
+    f_name = _name;
+    f_description = _description;
+    f_type = _type;
+    f_value1 = _value1;
+    f_value2 = _value2;
+    f_value3 = _value3;
+    f_d = 0;
+    f_level = _level;
+    f_lastUpdate = _lastUpdate;
+    f_id = _id;
+    events.clear();
 
     hash0 = makeHash();
     f_modified = _modified;
@@ -158,6 +181,16 @@ void CVItem::setParent(QString _parent)
     f_parent = _parent;
 }
 
+void CVItem::setSid(int _sid)
+{
+    f_sid = _sid;
+}
+
+int CVItem::sid()
+{
+    return f_sid;
+}
+
 
 
 void CVItem::setModified(bool isModified)
@@ -171,7 +204,7 @@ void CVItem::setModified(bool isModified)
 void CVItem::addEvent(QString _eventText)
 {
     CVEvent e = CVEvent(f_id, _eventText, 0);
-    e.toDB();
+    e.toDB(true);
     events.append(e);
 }
 
@@ -239,12 +272,12 @@ QString CVItem::makeHash()
     return hash;
 }
 
-void CVItem::toDB()
+void CVItem::toDB(bool force)
 {
     QString hash1 = makeHash();
     bool a = hash0.compare(hash1,Qt::CaseInsensitive)==0;
 
-    if(!a || f_modified==1){
+    if(!a || f_modified==1 || force){
         hash0 = hash1;
 
         if(f_unq>0)
@@ -264,17 +297,18 @@ void CVItem::insertToDB()
     QSqlQuery q;
     QString qs;
 
-    //QString bredpitt = QDateTime::currentDateTime().toString("yyyyMMddHHmmsszzz");
+    if(f_id.isEmpty())
+        f_id = QUuid::createUuid().toString();
 
     qs = QString("INSERT INTO items(id) VALUES('%1')").arg(f_id);
     execSQL(qs);
-
+qDebug() << qs;
     qs = QString("SELECT unq FROM items WHERE id LIKE '%1'").arg(f_id);
     execSQL(&q, qs);
-
+qDebug() << qs;
     q.next();
     f_unq = q.record().value("unq").toInt();
-
+qDebug() << f_unq;
     updateToDB();
 }
 
@@ -290,8 +324,8 @@ void CVItem::updateToDB()
 
     qs = QString("UPDATE items SET "
                  "name='%2', description='%3', "
-                 "type=%4, "
-                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent='%10', lvl=%11, u=%12, modified=1 "
+                 "type='%4', "
+                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent='%10', lvl=%11, u=%12, modified=%14, sid=%13 "
                  "WHERE unq=%1")
             .arg(f_unq)
             .arg(f_name.remove("'"))
@@ -304,8 +338,10 @@ void CVItem::updateToDB()
             .arg(f_qr.remove("'"))
             .arg(f_parent)
             .arg(f_level)
-            .arg(f_lastUpdate);
+            .arg(f_lastUpdate)
+            .arg(f_sid)
+            .arg(f_modified);
     execSQL(qs);
-    qDebug() << f_id << "updated";
+    qDebug() << qs;
 }
 

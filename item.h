@@ -17,6 +17,8 @@ public:
     CVItem();
     CVItem(int _unq, QString _id, QString _parent, int _level, QString _qr, QString _name, QString _description, QString _type,
            QString _value1, QString _value2, QString _value3, int _lastUpdate, int _modified);
+    CVItem(int _unq, QString _id, QString _parent, int _level, QString _qr, QString _name, QString _description, QString _type,
+           QString _value1, QString _value2, QString _value3, int _lastUpdate, int _modified, int _sid);
 
     int unq();
     void setUnq(int _unq);
@@ -25,6 +27,9 @@ public:
     void setId(QString _id);
     QString parent();
     void setParent(QString _parent);
+
+    void setSid(int _sid);
+    int sid();
 
     QString name();
     void setName(QString _name);
@@ -55,7 +60,7 @@ public:
     void setEvents(QList<CVEvent> _events);
 
 
-    void toDB();
+    void toDB(bool force);
     void insertToDB();
     void updateToDB();
     void markToDelete();
@@ -73,7 +78,7 @@ public:
 
 private:
     QString f_type;
-    int f_unq;
+    int f_unq, f_sid;
     int f_level;
     QString f_value1, f_value2, f_value3;
     QString f_name, f_description;

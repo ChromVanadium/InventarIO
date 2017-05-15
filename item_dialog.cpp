@@ -142,13 +142,13 @@ void CVItemDialog::on_tableWidget_cellActivated(int row, int column)
 void CVItemDialog::on_btAddEvent_clicked()
 {
     CVEvent e;
-    e.setItemId(f_item.id());
+    e.setParent(f_item.id());
     CVEventDialog *dlg = new CVEventDialog();
     dlg->setEvent(e);
 
     if(dlg->exec() == QDialog::Accepted){
         e = dlg->event();
-        e.toDB();
+        e.toDB(true);
         f_item.addEvent(e);
         fillEvents();
     }

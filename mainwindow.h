@@ -69,6 +69,8 @@ private slots:
 
     void on_btSync_clicked();
 
+    void on_btDelete_clicked();
+
 private:
     Ui::MainWindow *ui;
 

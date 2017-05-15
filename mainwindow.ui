@@ -28,6 +28,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="btDelete">
+        <property name="text">
+         <string>Удалить позицию</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="btAddEvent">
         <property name="text">
          <string>Добавить событие</string>
