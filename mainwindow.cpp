@@ -635,12 +635,14 @@ void MainWindow::on_tableWidget_cellClicked(int row, int column)
 
 void MainWindow::onDragAndDropped(int from, int into)
 {
-    //qDebug() << "item" << from << "dropped into" << into;
+    qDebug() << "item" << from << "dropped into" << into;
     int f=0, t=0;
     for(int i=0;i<fItems.count();i++){
         if(fItems[i].QR().toInt() == from) f = i;
         if(fItems[i].QR().toInt() == into) t = i;
     }
+    if(from==into)
+        return;
 
     if(fItems[f].id().compare(fItems[t].id())!=0){
         fItems[f].setParent(fItems[t].id());

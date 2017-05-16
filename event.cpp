@@ -194,13 +194,13 @@ void CVEvent::insertToDB()
 
     qs = QString("INSERT INTO events(id) VALUES('%1')").arg(f_id);
     execSQL(qs);
-qDebug() << qs;
+
     qs = QString("SELECT unq FROM events WHERE id LIKE '%1'").arg(f_id);
     execSQL(&q, qs);
-qDebug() << qs;
+
     q.next();
     f_unq = q.record().value("unq").toInt();
-qDebug() << f_unq;
+
     updateToDB();
 }
 
@@ -224,5 +224,4 @@ void CVEvent::updateToDB()
             .arg(f_sid)
             .arg(f_modified);
     execSQL(qs);
-    qDebug() << qs;
 }

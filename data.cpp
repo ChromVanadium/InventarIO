@@ -60,5 +60,5 @@ void CVData::createUuid()
 {
     f_uuid = QUuid::createUuid().toString();
 
-    execSQL( QString("INSERT INTO localsets(uuid) VALUES('%1')").arg(f_uuid) );
+    execSQL( QString("UPDATE localsets SET uuid='%1'").arg(f_uuid) );
 }

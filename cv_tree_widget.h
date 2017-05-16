@@ -27,6 +27,10 @@ private:
     Ui::CVTreeWidget *ui;
 
     void dropEvent(QDropEvent *event);
+    void dragMoveEvent(QDragMoveEvent *event);
+
+    QString dragSource, dragDestination;
+
 };
 
 #endif // CV_TREE_WIDGET_H

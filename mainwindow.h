@@ -117,6 +117,8 @@ private:
     bool parentSelecting;
     int childId, parentId;
 
+
+
     QList<int> typesIndexes;
     QList<bool> typesChecked;
 

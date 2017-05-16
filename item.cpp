@@ -213,22 +213,6 @@ void CVItem::addEvent(CVEvent _event)
      events.append(_event);
 }
 
-//void CVItem::addChildItem(CVItem _child)
-//{
-//    _child.setLevel(f_level+1);
-//    _child.setParent(f_id);
-//    childItems.append(_child);
-//}
-
-//CVItem CVItem::takeChildItem(int _id)
-//{
-//    CVItem m;
-//    for(int i=0;i<childItems.count();i++)
-//        if(childItems[i].id()==_id)
-//            m = childItems[i];
-//    return m;
-//}
-
 QJsonObject CVItem::toJson()
 {
     QJsonObject json;
@@ -302,13 +286,13 @@ void CVItem::insertToDB()
 
     qs = QString("INSERT INTO items(id) VALUES('%1')").arg(f_id);
     execSQL(qs);
-qDebug() << qs;
+
     qs = QString("SELECT unq FROM items WHERE id LIKE '%1'").arg(f_id);
     execSQL(&q, qs);
-qDebug() << qs;
+
     q.next();
     f_unq = q.record().value("unq").toInt();
-qDebug() << f_unq;
+
     updateToDB();
 }
 
@@ -342,6 +326,5 @@ void CVItem::updateToDB()
             .arg(f_sid)
             .arg(f_modified);
     execSQL(qs);
-    qDebug() << qs;
 }
 
