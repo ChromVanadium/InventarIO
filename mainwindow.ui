@@ -93,40 +93,69 @@
        <number>0</number>
       </property>
       <item>
-       <layout class="QVBoxLayout" name="vl3">
-        <property name="leftMargin">
-         <number>0</number>
+       <widget class="QStackedWidget" name="stackedWidget">
+        <property name="currentIndex">
+         <number>1</number>
         </property>
-        <item>
-         <widget class="QTableWidget" name="tableWidget">
-          <property name="styleSheet">
-           <string notr="true">selection-color: rgb(0, 0, 0);
+        <widget class="QWidget" name="page">
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <layout class="QVBoxLayout" name="vl3"/>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="page_2">
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <property name="spacing">
+           <number>0</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QTableWidget" name="tableWidget">
+            <property name="styleSheet">
+             <string notr="true">selection-color: rgb(0, 0, 0);
 selection-background-color: rgb(255, 255, 224);</string>
-          </property>
-          <property name="editTriggers">
-           <set>QAbstractItemView::NoEditTriggers</set>
-          </property>
-          <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectRows</enum>
-          </property>
-          <attribute name="horizontalHeaderStretchLastSection">
-           <bool>true</bool>
-          </attribute>
-         </widget>
-        </item>
-        <item>
-         <widget class="QTreeWidget" name="treeWidget">
-          <property name="expandsOnDoubleClick">
-           <bool>false</bool>
-          </property>
-          <column>
-           <property name="text">
-            <string notr="true">1</string>
-           </property>
-          </column>
-         </widget>
-        </item>
-       </layout>
+            </property>
+            <property name="editTriggers">
+             <set>QAbstractItemView::NoEditTriggers</set>
+            </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectRows</enum>
+            </property>
+            <attribute name="horizontalHeaderStretchLastSection">
+             <bool>true</bool>
+            </attribute>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
       </item>
       <item>
        <widget class="QFrame" name="frame">
@@ -165,18 +194,57 @@ selection-background-color: rgb(255, 255, 224);</string>
           <number>2</number>
          </property>
          <item>
-          <widget class="QCheckBox" name="ckShowChilds">
-           <property name="text">
-            <string>Показать детей</string>
+          <widget class="QToolBox" name="toolBox">
+           <property name="currentIndex">
+            <number>1</number>
            </property>
+           <widget class="QWidget" name="page_3">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>0</y>
+              <width>194</width>
+              <height>150</height>
+             </rect>
+            </property>
+            <attribute name="label">
+             <string>Иерархия</string>
+            </attribute>
+           </widget>
+           <widget class="QWidget" name="page_4">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>0</y>
+              <width>194</width>
+              <height>150</height>
+             </rect>
+            </property>
+            <attribute name="label">
+             <string>поштучно</string>
+            </attribute>
+            <layout class="QVBoxLayout" name="verticalLayout_6">
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <property name="leftMargin">
+              <number>2</number>
+             </property>
+             <property name="topMargin">
+              <number>2</number>
+             </property>
+             <property name="rightMargin">
+              <number>2</number>
+             </property>
+             <property name="bottomMargin">
+              <number>2</number>
+             </property>
+             <item>
+              <layout class="QGridLayout" name="gridLayout"/>
+             </item>
+            </layout>
+           </widget>
           </widget>
-         </item>
-         <item>
-          <layout class="QGridLayout" name="gridLayout">
-           <property name="spacing">
-            <number>3</number>
-           </property>
-          </layout>
          </item>
          <item>
           <spacer name="verticalSpacer">
@@ -231,6 +299,7 @@ selection-background-color: rgb(255, 255, 224);</string>
      <string>Данные</string>
     </property>
     <addaction name="actAddItem"/>
+    <addaction name="action_sql"/>
    </widget>
    <addaction name="menu"/>
    <addaction name="menu_2"/>
@@ -262,6 +331,11 @@ selection-background-color: rgb(255, 255, 224);</string>
   <action name="actCreate">
    <property name="text">
     <string>Создать базу данных</string>
+   </property>
+  </action>
+  <action name="action_sql">
+   <property name="text">
+    <string>выполнение sql запроса</string>
    </property>
   </action>
  </widget>

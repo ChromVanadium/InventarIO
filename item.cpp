@@ -41,6 +41,12 @@ CVItem::CVItem(int _unq, QString _id, QString _parent, int _level, QString _qr, 
 
     hash0 = makeHash();
     f_modified = _modified;
+
+    if(f_id.isEmpty()){
+        f_id = QUuid::createUuid().toString();
+        f_modified = 1;
+        toDB(true);
+    }
 }
 
 CVItem::CVItem(int _unq, QString _id, QString _parent, int _level, QString _qr, QString _name, QString _description, QString _type, QString _value1, QString _value2, QString _value3, int _lastUpdate, int _modified, int _sid)
@@ -63,6 +69,12 @@ CVItem::CVItem(int _unq, QString _id, QString _parent, int _level, QString _qr, 
 
     hash0 = makeHash();
     f_modified = _modified;
+
+    if(_id.isEmpty()){
+        f_id = QUuid::createUuid().toString();
+        f_modified = 1;
+        toDB(true);
+    }
 }
 
 int CVItem::unq(){
@@ -309,7 +321,7 @@ void CVItem::updateToDB()
     qs = QString("UPDATE items SET "
                  "name='%2', description='%3', "
                  "type='%4', "
-                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent='%10', lvl=%11, u=%12, modified=%14, sid=%13 "
+                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent='%10', lvl=%11, u=%12, modified=%14, sid=%13, id='%15' "
                  "WHERE unq=%1")
             .arg(f_unq)
             .arg(f_name.remove("'"))
@@ -324,7 +336,9 @@ void CVItem::updateToDB()
             .arg(f_level)
             .arg(f_lastUpdate)
             .arg(f_sid)
-            .arg(f_modified);
+            .arg(f_modified)
+            .arg(f_id);
     execSQL(qs);
+qDebug() << qs;
 }
 

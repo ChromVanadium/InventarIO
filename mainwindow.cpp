@@ -18,11 +18,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     data = new CVData();
 
-    ui->treeWidget->setVisible(false);
-    ui->tableWidget->setVisible(false);
+//    ui->treeWidget->setVisible(false);
+//    ui->tableWidget->setVisible(false);
     tree = new CVTreeWidget();
     tree->setExpandsOnDoubleClick(false);
     ui->vl3->addWidget(tree);
+
     connect(tree,SIGNAL(dragAndDropped(int,int)),this,SLOT(onDragAndDropped(int,int)));
     connect(tree,SIGNAL(somethingDropped()),this,SLOT(onSomethingDropped()));
     connect(tree,SIGNAL(itemActivated(QTreeWidgetItem*,int)),this,SLOT(onItemActivated(QTreeWidgetItem*,int)));
@@ -32,6 +33,7 @@ MainWindow::MainWindow(QWidget *parent) :
         getItems();
         //fillItems();
         fillTree();
+        fillTable();
     }
 
     setWindowTitle( QString("InventarIO. %4. build %1 от %2 %3")
@@ -45,6 +47,8 @@ MainWindow::MainWindow(QWidget *parent) :
             this,SLOT(showTableWidgetContextMenu(QPoint)));
 
     fillFilter();
+    ui->stackedWidget->setCurrentIndex(0);
+    ui->toolBox->setCurrentIndex(0);
 
     qDebug() << QDateTime::currentDateTime();
     qDebug() << QDateTime::currentDateTimeUtc();
@@ -377,24 +381,24 @@ bool MainWindow::indexOfItem(int itemId)
 
 void MainWindow::fillFilter()
 {
-    ui->frame->setVisible(false);
-//    typesIndexes.clear();
-//    typesChecked.clear();
+    //ui->frame->setVisible(false);
+    typesIndexes.clear();
+    typesChecked.clear();
 
-//    for(int i=0;i<data->types.count();i++){
-//        if(data->types[i].index>0){
-//            QCheckBox *ck = new QCheckBox();
-//            ck->setChecked(true);
-//            typesIndexes.append(data->types[i].index);
-//            typesChecked.append(true);
-//            ck->setText(data->types[i].name);
-//            ck->setObjectName(QString::number(data->types[i].index));
-//            ui->gridLayout->addWidget(ck,i,0);
-//            connect(ck,SIGNAL(toggled(bool)),this,SLOT(onFilterCheckBoxChanged()));
-//        };
-//    }
+    for(int i=0;i<data->types.count();i++){
+        if(data->types[i].index>0){
+            QCheckBox *ck = new QCheckBox();
+            ck->setChecked(true);
+            typesIndexes.append(data->types[i].index);
+            typesChecked.append(true);
+            ck->setText(data->types[i].name);
+            ck->setObjectName(QString::number(data->types[i].index));
+            ui->gridLayout->addWidget(ck,i,0);
+            connect(ck,SIGNAL(toggled(bool)),this,SLOT(onFilterCheckBoxChanged()));
+        };
+    }
 
-    //    connect(ui->ckShowChilds,SIGNAL(toggled(bool)),this,SLOT(onFilterCheckBoxChanged()));
+    //connect(ui->ckShowChilds,SIGNAL(toggled(bool)),this,SLOT(onFilterCheckBoxChanged()));
 }
 
 void MainWindow::onFilterCheckBoxChanged()
@@ -414,10 +418,10 @@ void MainWindow::onFilterCheckBoxChanged()
         if(t==r)
             ui->tableWidget->setRowHidden(i,!c);
 
-        int p = parentOfItem(id);
+        //int p = parentOfItem(id);
 
-        if(p>0)
-            ui->tableWidget->setRowHidden(i,ui->ckShowChilds->isChecked());
+//        if(p>0)
+//            ui->tableWidget->setRowHidden(i,ui->ckShowChilds->isChecked());
     }
 }
 
@@ -556,6 +560,71 @@ void MainWindow::fillTree2()
     tree->expandAll();
 }
 
+void MainWindow::fillTable()
+{
+    QStringList labels;
+    labels << "unq" << "id" << "QR" << "Имя" << "тип" << "1" << "2" << "3" << "-";
+    ui->tableWidget->setColumnCount(labels.count());
+    ui->tableWidget->setHorizontalHeaderLabels(labels);
+
+    int r=1;
+    for(int i=0;i<fItems.count();i++){
+        ui->tableWidget->setRowCount(r);
+        fillTableItem(i,fItems[i]);
+        r++;
+    }
+
+    ui->tableWidget->setColumnHidden(0,true);
+    ui->tableWidget->setColumnHidden(1,true);
+    ui->tableWidget->resizeRowsToContents();
+}
+
+void MainWindow::fillTableItem(int row, CVItem _item)
+{
+    //labels << "unq" << "id" << "QR" << "Имя" << "тип" << "1" << "2" << "3" << "-";
+
+    QTableWidgetItem *w0 = new QTableWidgetItem();
+    w0->setText(QString::number(_item.unq()));
+    ui->tableWidget->setItem(row,0,w0);
+
+    QTableWidgetItem *w1 = new QTableWidgetItem();
+    w1->setText(_item.id());
+    ui->tableWidget->setItem(row,1,w1);
+
+    QTableWidgetItem *w2 = new QTableWidgetItem();
+    w2->setText(_item.QR());
+    ui->tableWidget->setItem(row,2,w2);
+
+    QTableWidgetItem *w3 = new QTableWidgetItem();
+    w3->setText(_item.name());
+    ui->tableWidget->setItem(row,3,w3);
+
+    QTableWidgetItem *w4 = new QTableWidgetItem();
+    w4->setText(_item.type());
+    ui->tableWidget->setItem(row,4,w4);
+
+    QTableWidgetItem *w5 = new QTableWidgetItem();
+    w5->setText(_item.value1());
+    ui->tableWidget->setItem(row,5,w5);
+
+    QTableWidgetItem *w6 = new QTableWidgetItem();
+    w6->setText(_item.value2());
+    ui->tableWidget->setItem(row,6,w6);
+
+    QTableWidgetItem *w7 = new QTableWidgetItem();
+    w7->setText(_item.value3());
+    ui->tableWidget->setItem(row,7,w7);
+
+//    QTableWidgetItem *w8 = new QTableWidgetItem();
+//    w8->setText(QString::number(_item.unq()));
+//    ui->tableWidget->setItem(row,8,w8);
+
+//    QTableWidgetItem *w9 = new QTableWidgetItem();
+//    w9->setText(QString::number(_item.unq()));
+//    ui->tableWidget->setItem(row,9,w9);
+
+}
+
 void MainWindow::fillTreeItem(QTreeWidgetItem *_wi, CVItem _item)
 {
     _wi->setText(colUnq,  QString("%1").arg(_item.unq()) );
@@ -569,6 +638,8 @@ void MainWindow::fillTreeItem(QTreeWidgetItem *_wi, CVItem _item)
 
     _wi->setTextAlignment(colQR,Qt::AlignVCenter|Qt::AlignRight);
 }
+
+
 
 void MainWindow::on_tableWidget_cellActivated(int row, int column)
 {
@@ -981,7 +1052,7 @@ qDebug() << "sending:\n" << doc;
 
     manager->post(request, "json=" + strJson);
 
-    ui->lbUpdated->setText("receiving from serva");
+    ui->lbUpdated->setText("receiving from server...");
 
     connect(manager, SIGNAL(finished(QNetworkReply *)), this, SLOT(syncReplyFinished(QNetworkReply *)));
     connect(manager, SIGNAL(finished(QNetworkReply *)), manager, SLOT(deleteLater()));
@@ -1017,7 +1088,6 @@ void MainWindow::syncReplyFinished(QNetworkReply *reply)
                 .arg(obj["id"].toString())
                 .arg(obj["sid"].toInt());
         execSQL(qs);
-qDebug() << qs;
     }
 
     /* получаем sid от отправленных данных в таблицу events */
@@ -1030,7 +1100,6 @@ qDebug() << qs;
                 .arg(obj["id"].toString())
                 .arg(obj["sid"].toInt());
         execSQL(qs);
-qDebug() << qs;
     }
 
     /* получаем новые данные из items внесенные извне */
@@ -1108,5 +1177,19 @@ void MainWindow::on_btDelete_clicked()
         fItems[pos].toDB(true);
         getItems();
         fillTree();
+    }
+}
+
+void MainWindow::on_action_sql_triggered()
+{
+    CVSqlDialog *d = new CVSqlDialog();
+    d->exec();
+}
+
+void MainWindow::on_toolBox_currentChanged(int index)
+{
+    switch(index){
+        case 0: ui->stackedWidget->setCurrentIndex(0); break;
+        case 1: ui->stackedWidget->setCurrentIndex(1); break;
     }
 }

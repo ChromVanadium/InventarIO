@@ -22,6 +22,7 @@
 #include "data.h"
 #include "event_dialog.h"
 #include "cv_tree_widget.h"
+#include "sql_dialog.h"
 
 namespace Ui {
 class MainWindow;
@@ -71,6 +72,10 @@ private slots:
 
     void on_btDelete_clicked();
 
+    void on_action_sql_triggered();
+
+    void on_toolBox_currentChanged(int index);
+
 private:
     Ui::MainWindow *ui;
 
@@ -88,8 +93,10 @@ private:
 
     void fillTree();
     void fillTree2();
+    void fillTable();
 
     void fillTreeItem(QTreeWidgetItem *_wi, CVItem _item);
+    void fillTableItem(int row, CVItem _item);
 
     void getEvents();
     void getConnections();
