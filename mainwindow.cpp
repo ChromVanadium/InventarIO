@@ -350,9 +350,9 @@ int MainWindow::typeOfItem(int itemId)
 {
     int t = 0;
 
-//    for(int i=0;i<fItems.count();i++)
-//        if(fItems[i].id()==itemId)
-//            t = fItems[i].type().index;
+    for(int i=0;i<fItems.count();i++)
+        if(fItems[i].unq() == itemId)
+            t = fItems[i].type().toInt();
 
     return t;
 }
@@ -567,6 +567,14 @@ void MainWindow::fillTable()
     ui->tableWidget->setColumnCount(labels.count());
     ui->tableWidget->setHorizontalHeaderLabels(labels);
 
+    ui->tableWidget->setColumnWidth(2,48);
+    ui->tableWidget->setColumnWidth(3,100);
+    ui->tableWidget->setColumnWidth(4,300);
+    ui->tableWidget->setColumnWidth(5,200);
+    ui->tableWidget->setColumnWidth(6,200);
+    ui->tableWidget->setColumnWidth(7,200);
+
+
     int r=1;
     for(int i=0;i<fItems.count();i++){
         ui->tableWidget->setRowCount(r);
@@ -577,6 +585,8 @@ void MainWindow::fillTable()
     ui->tableWidget->setColumnHidden(0,true);
     ui->tableWidget->setColumnHidden(1,true);
     ui->tableWidget->resizeRowsToContents();
+
+    //onFilterCheckBoxChanged();
 }
 
 void MainWindow::fillTableItem(int row, CVItem _item)
@@ -594,14 +604,15 @@ void MainWindow::fillTableItem(int row, CVItem _item)
     QTableWidgetItem *w2 = new QTableWidgetItem();
     w2->setText(_item.QR());
     ui->tableWidget->setItem(row,2,w2);
+    w2->setTextAlignment(Qt::AlignRight|Qt::AlignVCenter);
 
     QTableWidgetItem *w3 = new QTableWidgetItem();
     w3->setText(_item.name());
-    ui->tableWidget->setItem(row,3,w3);
+    ui->tableWidget->setItem(row,4,w3);
 
     QTableWidgetItem *w4 = new QTableWidgetItem();
-    w4->setText(_item.type());
-    ui->tableWidget->setItem(row,4,w4);
+    w4->setText( data->type(_item.type().toInt()) );
+    ui->tableWidget->setItem(row,3,w4);
 
     QTableWidgetItem *w5 = new QTableWidgetItem();
     w5->setText(_item.value1());
@@ -660,6 +671,7 @@ void MainWindow::on_btRefresh_clicked()
 {
     getItems();
     fillTree();
+    fillTable();
 }
 
 void MainWindow::on_btAdd_clicked()
