@@ -272,7 +272,7 @@ void CVItem::toDB(bool force)
 {
     QString hash1 = makeHash();
     bool a = hash0.compare(hash1,Qt::CaseInsensitive)==0;
-
+qDebug() << hash0 << hash1 << f_modified;
     if(!a || f_modified==1 || force){
         hash0 = hash1;
 
@@ -314,6 +314,7 @@ void CVItem::updateToDB()
     QString qs;
 
     f_lastUpdate = QDateTime::currentDateTime().toTime_t();
+    f_modified = 1;
 
     if(f_id.isEmpty())
         f_id = QUuid::createUuid().toString();

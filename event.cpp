@@ -210,6 +210,7 @@ void CVEvent::updateToDB()
     QString qs;
 
     f_lastUpdate = QDateTime::currentDateTime().toTime_t();
+    f_modified = 1;
 
     qs = QString("UPDATE events SET "
                  "description='%2', type=%3, "
