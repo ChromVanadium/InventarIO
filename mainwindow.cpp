@@ -954,7 +954,7 @@ void MainWindow::on_actOpenDB_triggered()
 
 void MainWindow::on_btSync_clicked()
 {
-    sync();
+    sync1();
 }
 
 void MainWindow::sync()
@@ -1070,6 +1070,103 @@ qDebug() << "sending:\n" << doc;
     connect(manager, SIGNAL(finished(QNetworkReply *)), manager, SLOT(deleteLater()));
 }
 
+void MainWindow::sync1()
+{
+    /*
+     По каждой таблице в базе:
+     1. Сначала выбрать все новые (без sid)
+     2. Выбрать все измененнные локально
+     2.1. Добавить в базу метку об изменениии
+     3. Отправить все изменения на сервак
+     4. Из полученного ответа:
+     4.1. Присвоить sid всем новым, изменить время на серверное
+     4.2. Внести изменения, полученные с сервера, в локальную базу
+     */
+
+    ui->lbUpdated->setText("sending items to serva");
+
+    st0 = QDateTime::currentDateTime();
+    st1 = st0;
+    syncLog.append( QString("sync items started at %1").arg(st0.toString("hh:mm:ss.zzz")) );
+
+    QSqlQuery q;
+    QString qs;
+
+    qs = QString("SELECT MAX(sid) AS sid FROM items ");
+    q = execSQLq(qs);
+    q.next();
+    int maxItemSid = q.record().value("sid").toInt();
+
+    qs = QString("SELECT lastservertime FROM localsets");
+    execSQL(&q,qs);
+    q.next();
+    int lastServerTime = q.record().value("lastservertime").toInt();
+
+    // таблица items
+    // выборка вновь внесенных данных (п.1)
+    // выборка измененных локально данных (п.2)
+    qs = QString("SELECT * "
+                 "FROM items "
+                 "WHERE sid=0 OR modified=1");
+    execSQL(&q, qs);
+
+    QJsonArray newItemsJson;
+    QJsonArray modifiedItemsJson;
+
+    while(q.next()){
+        QJsonObject json;
+        json["id"] = q.record().value("id").toString();
+        json["sid"] = q.record().value("sid").toInt();
+        json["name"] = q.record().value("name").toString();
+        json["description"] = q.record().value("description").toString();
+        json["type"] = q.record().value("type").toString();
+        json["value1"] = q.record().value("value1").toString();
+        json["value2"] = q.record().value("value2").toString();
+        json["value3"] = q.record().value("value3").toString();
+        json["d"] = q.record().value("d").toInt();
+        json["qr"] = q.record().value("qr").toString();
+        json["parent"] = q.record().value("parent").toString();
+        json["level"] = q.record().value("lvl").toInt();
+        json["u"] = q.record().value("u").toInt();
+
+        if(q.record().value("sid").toInt()==0)
+            newItemsJson.append(json);
+        else
+            modifiedItemsJson.append(json);
+    }
+
+    int dt = QDateTime::currentDateTime().toTime_t();
+    syncJson["max_item_sid"] = maxItemSid;
+    syncJson["new_items"] = newItemsJson;
+    syncJson["modified_items"] = modifiedItemsJson;
+    syncJson["source_id"] = data->uuid();
+    syncJson["comp_time"] = dt;
+    syncJson["last_sync"] = lastServerTime;
+
+    st2 = QDateTime::currentDateTime();
+    syncLog.append( QString("created items json to send to the server in %1 msecs").arg(st1.msecsTo(st2)) );
+    st1 = st2;
+
+    QJsonDocument doc(syncJson);
+    QByteArray strJson = doc.toJson();
+
+qDebug() << "sending:\n" << doc;
+    QString urlo = QString(data->serverUrl());
+    urlo = "http://193.150.105.40:16980/inventario/sync1.php";
+
+    QNetworkAccessManager *manager = new QNetworkAccessManager(this);
+    QUrl url(urlo);
+    QNetworkRequest request(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+
+    manager->post(request, "json=" + strJson);
+
+    ui->lbUpdated->setText("receiving from server...");
+
+    connect(manager, SIGNAL(finished(QNetworkReply *)), this, SLOT(syncItemsReplyFinished(QNetworkReply *)));
+    connect(manager, SIGNAL(finished(QNetworkReply *)), manager, SLOT(deleteLater()));
+}
+
 void MainWindow::syncReplyFinished(QNetworkReply *reply)
 {
     st2 = QDateTime::currentDateTime();
@@ -1080,7 +1177,7 @@ void MainWindow::syncReplyFinished(QNetworkReply *reply)
 
     QByteArray content = reply->readAll();
     qDebug() << "\nreceiving:";
-
+qDebug() << content;
     QJsonDocument json(QJsonDocument::fromJson(content));
 //    qDebug() << "\n";
     qDebug() << json;
@@ -1169,6 +1266,83 @@ void MainWindow::syncReplyFinished(QNetworkReply *reply)
 
     getItems();
     //getEvents();
+    fillTree();
+}
+
+void MainWindow::syncItemsReplyFinished(QNetworkReply *reply)
+{
+    st2 = QDateTime::currentDateTime();
+    syncLog.append( QString("received response from server in %1 msecs").arg(st1.msecsTo(st2)) );
+    st1 = st2;
+
+    ui->lbUpdated->setText("processing");
+
+    QByteArray content = reply->readAll();
+
+qDebug() << "\nreceived:" << content;
+    QJsonDocument json(QJsonDocument::fromJson(content));
+
+//    qDebug() << json;
+
+    QJsonObject j1 = json.object();
+
+    int serverTime = j1["servertime"].toInt();
+
+    /* получаем sid от отправленных данных в таблицу items */
+    QJsonArray newItemsSids = j1["newItemsSids"].toArray();
+    for(int j=0;j<newItemsSids.count();j++){
+        QJsonObject obj = newItemsSids[j].toObject();
+        QString qs = QString("UPDATE items SET "
+                             "u=%1, sid=%3, modified=0 WHERE id LIKE '%2'")
+                .arg(serverTime)
+                .arg(obj["id"].toString())
+                .arg(obj["sid"].toInt());
+        execSQL(qs);
+    }
+
+    /* апдейтим время изменения на серверное для измененнных позиций */
+    QString qs = QString("UPDATE items SET "
+                         "u=%1 WHERE modified=1")
+            .arg(serverTime);
+    execSQL(qs);
+
+    /* получаем новые данные из items внесенные извне */
+    QJsonArray newItemsFromAnotherPlace = j1["newItemsFromAnotherPlace"].toArray();
+    for(int j=0;j<newItemsFromAnotherPlace.count();j++){
+        QJsonObject obj = newItemsFromAnotherPlace[j].toObject();
+
+        CVItem itm;
+        itm = CVItem( 0,
+                      obj["id"].toString(),
+                      obj["parent"].toString(),
+                      obj["lvl"].toInt(),
+                      obj["qr"].toString(),
+                      obj["name"].toString(),
+                      obj["description"].toString(),
+                      obj["type"].toString(),
+                      obj["value1"].toString(),
+                      obj["value2"].toString(),
+                      obj["value3"].toString(),
+                      obj["u"].toInt(),
+                      0,
+                      obj["sid"].toInt());
+        itm.toDB(true);
+        fItems.append(itm);
+    }
+
+    qs = QString("UPDATE localsets SET lastservertime=%1").arg(serverTime);
+    execSQL(qs);
+
+    st2 = QDateTime::currentDateTime();
+    syncLog.append( QString("inserted reveived data in %1 msecs").arg(st1.msecsTo(st2)) );
+    st1 = st2;
+
+    syncLog.append( QString("sync time %1 msecs").arg(st0.msecsTo(st2)) );
+
+    ui->lbUpdated->setText( QString("last sync %1").arg(QDateTime::currentDateTime().toString("hh:mm:ss")) );
+
+    getItems();
+//    //getEvents();
     fillTree();
 }
 

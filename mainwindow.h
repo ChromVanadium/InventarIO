@@ -67,6 +67,7 @@ private slots:
     void on_actOpenDB_triggered();
 
     void syncReplyFinished(QNetworkReply *reply);
+    void syncItemsReplyFinished(QNetworkReply *reply);
 
     void on_btSync_clicked();
 
@@ -130,6 +131,8 @@ private:
     QList<bool> typesChecked;
 
     void sync();
+    void sync1();
+    void syncItems();
 };
 
 #endif // MAINWINDOW_H
