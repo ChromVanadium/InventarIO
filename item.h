@@ -65,6 +65,7 @@ public:
     void updateToDB();
     void markToDelete();
     void setModified(bool isModified);
+    bool modified();
 
     QList<CVEvent> events;
     void addEvent(QString _eventText);

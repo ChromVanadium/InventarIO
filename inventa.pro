@@ -24,7 +24,8 @@ SOURCES += main.cpp\
     event_dialog.cpp \
     cv_tree_widget.cpp \
     algorythm.cpp \
-    sql_dialog.cpp
+    sql_dialog.cpp \
+    log_form.cpp
 
 HEADERS  += mainwindow.h \
     item.h \
@@ -39,13 +40,15 @@ HEADERS  += mainwindow.h \
     cv_tree_widget.h \
     algorythm.h \
     build.h \
-    sql_dialog.h
+    sql_dialog.h \
+    log_form.h
 
 FORMS    += mainwindow.ui \
     item_dialog.ui \
     event_dialog.ui \
     cv_tree_widget.ui \
-    sql_dialog.ui
+    sql_dialog.ui \
+    log_form.ui
 
 RESOURCES += \
     res.qrc

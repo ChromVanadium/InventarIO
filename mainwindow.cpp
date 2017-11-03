@@ -7,6 +7,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    logForm = new CVLogForm();
+
     parentSelecting = false;
     childId = 0;
     parentId = 0;
@@ -30,10 +32,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
     if(openDB(sets->value("main/lastDB").toString())){
         data->getFromDB();
+qDebug() << "s" << 1;
         getItems();
+qDebug() << "s" << 2;
         //fillItems();
         fillTree();
+qDebug() << "s" << 3;
         fillTable();
+qDebug() << "s" << 4;
     }
 
     setWindowTitle( QString("InventarIO. %4. build %1 от %2 %3")
@@ -429,77 +435,14 @@ void MainWindow::onFilterCheckBoxChanged()
 void MainWindow::fillTree()
 {
     fillTree2();
-    return;
-/*
-    tree->clear();
-    QStringList labels;
-    labels << "Название" << "id" << "Инв.№" << "тип" << "1" << "2" << "3" << "-";
-    tree->setColumnCount(labels.count());
-    tree->setHeaderLabels(labels);
-
-    colId = 1;
-    colType = 3;
-    colName = 0;
-    colVal1 = 4;
-    colVal2 = 5;
-    colVal3 = 6;
-    colQR = 2;
-
-    tree->setColumnCount(labels.count());
-    tree->setHeaderLabels(labels);
-
-    QList<CVItem> tempItems = fItems;
-
-    // сначала пробегаем по безродительским итемам
-    for(int i=0;i<tempItems.count();i++){
-        if(tempItems[i].parent()==0){
-            QTreeWidgetItem *tw = new QTreeWidgetItem();
-            tree->addTopLevelItem(tw);
-            fillTreeItem(tw, tempItems[i]);
-            tempItems.takeAt(i); i--;
-        }
-    }
-
-    // далее идем по оставшимся "детям"
-    int looper = 0;
-    while(tempItems.count()>0){
-        for(int i=0;i<tempItems.count();i++){
-            QTreeWidgetItemIterator it(tree);
-                while (*it) {
-                    QTreeWidgetItem *wp = (*it);
-                    QString cid = wp->text(colId);
-                    if (cid.toInt() == tempItems[i].parent()){
-                        QTreeWidgetItem *tw = new QTreeWidgetItem();
-                        wp->addChild(tw);
-                        fillTreeItem(tw, tempItems[i]);
-                        tempItems.takeAt(i); i--;
-                    }
-                    ++it;
-                }
-        }
-        looper++;
-        if(looper==1000)
-            break;
-    }
-
-    tree->setColumnWidth(colName,260);
-    tree->setColumnWidth(colType,80);
-    tree->setColumnWidth(colVal1,120);
-    tree->setColumnWidth(colVal2,120);
-    tree->setColumnWidth(colVal3,120);
-    tree->setColumnWidth(colQR,50);
-
-
-    tree->hideColumn(colId);
-    tree->expandAll();
-    */
 }
 
 void MainWindow::fillTree2()
 {
+qDebug() << "\nvoid MainWindow::fillTree2()...";
     tree->clear();
     QStringList labels;
-    labels << "Название" << "unq" << "uuid" << "Инв.№" << "тип" << "1" << "2" << "3" << "-";
+    labels << "Название" << "unq" << "uuid" << "Инв.№" << "тип" << "1" << "2" << "3" << "ID" << "-";
     tree->setColumnCount(labels.count());
     tree->setHeaderLabels(labels);
 
@@ -511,6 +454,7 @@ void MainWindow::fillTree2()
     colVal2 = 6;
     colVal3 = 7;
     colQR = 3;
+    colSID = 8;
 
     tree->setColumnCount(labels.count());
     tree->setHeaderLabels(labels);
@@ -530,20 +474,30 @@ void MainWindow::fillTree2()
     // далее идем по оставшимся "детям"
     int looper = 0;
     while(tempItems.count()>0){
-        for(int i=0;i<tempItems.count();i++){
-            QTreeWidgetItemIterator it(tree);
-                while (*it) {
-                    QTreeWidgetItem *wp = (*it);
-                    QString id = wp->text(colId);
-                    if (id.compare(tempItems[i].parent())==0){
-                        QTreeWidgetItem *tw = new QTreeWidgetItem();
-                        wp->addChild(tw);
-                        fillTreeItem(tw, tempItems[i]);
-                        tempItems.takeAt(i); i--;
-                    }
-                    ++it;
+
+        QTreeWidgetItemIterator it(tree);
+        while (*it) {
+            QTreeWidgetItem *wp = (*it);
+            QString id = wp->text(colId);
+//            int j = -1;
+            QList<int> j;
+            j.clear();
+
+            for(int i=0;i<tempItems.count();i++){
+                if (id.compare(tempItems[i].parent())==0){
+                    QTreeWidgetItem *tw = new QTreeWidgetItem();
+                    wp->addChild(tw);
+                    fillTreeItem(tw, tempItems[i]);
+                    j.append(i);
                 }
+            }
+            ++it;
+            for(int a=j.count()-1;a>=0;a--){
+                qDebug() << "a" << a << j.count() << "tempItems.count()" << tempItems.count();
+                            tempItems.takeAt(j[a]);
+            }
         }
+
         looper++;                       /* за случай зацикливания */
         if(looper==1000) break;         /*                        */
     }
@@ -554,16 +508,18 @@ void MainWindow::fillTree2()
     tree->setColumnWidth(colVal2,120);
     tree->setColumnWidth(colVal3,120);
     tree->setColumnWidth(colQR,50);
+    tree->setColumnWidth(colSID,350);
 
     tree->hideColumn(colId);
     tree->hideColumn(colUnq);
     tree->expandAll();
+qDebug() << "...void MainWindow::fillTree2()";
 }
 
 void MainWindow::fillTable()
 {
     QStringList labels;
-    labels << "unq" << "id" << "QR" << "Имя" << "тип" << "1" << "2" << "3" << "-";
+    labels << "unq" << "id" << "QR" << "Имя" << "тип" << "1" << "2" << "3" << "ID" << "-";
     ui->tableWidget->setColumnCount(labels.count());
     ui->tableWidget->setHorizontalHeaderLabels(labels);
 
@@ -591,7 +547,7 @@ void MainWindow::fillTable()
 
 void MainWindow::fillTableItem(int row, CVItem _item)
 {
-    //labels << "unq" << "id" << "QR" << "Имя" << "тип" << "1" << "2" << "3" << "-";
+    //labels << "unq" << "id" << "QR" << "Имя" << "тип" << "1" << "2" << "3" << "ID" << "-";
 
     QTableWidgetItem *w0 = new QTableWidgetItem();
     w0->setText(QString::number(_item.unq()));
@@ -626,6 +582,13 @@ void MainWindow::fillTableItem(int row, CVItem _item)
     w7->setText(_item.value3());
     ui->tableWidget->setItem(row,7,w7);
 
+    QTableWidgetItem *w8 = new QTableWidgetItem();
+    QString w8str = QString("%1: %2")
+            .arg(_item.sid())
+            .arg(_item.id());
+    w8->setText(w8str);
+    ui->tableWidget->setItem(row,8,w8);
+
 //    QTableWidgetItem *w8 = new QTableWidgetItem();
 //    w8->setText(QString::number(_item.unq()));
 //    ui->tableWidget->setItem(row,8,w8);
@@ -646,6 +609,13 @@ void MainWindow::fillTreeItem(QTreeWidgetItem *_wi, CVItem _item)
     _wi->setText(colVal1, QString("%1").arg(_item.value1()) );
     _wi->setText(colVal2, QString("%1").arg(_item.value2()) );
     _wi->setText(colVal3, QString("%1").arg(_item.value3()) );
+
+    QString w8str = QString("%1: %2")
+            .arg(_item.sid())
+            .arg(_item.id());
+    if(_item.modified())
+        w8str.append(" *");
+     _wi->setText(colSID, w8str );
 
     _wi->setTextAlignment(colQR,Qt::AlignVCenter|Qt::AlignRight);
 }
@@ -1097,11 +1067,14 @@ void MainWindow::sync1()
     q.next();
     int maxItemSid = q.record().value("sid").toInt();
 
+    logForm->addText(qs);
+
     qs = QString("SELECT lastservertime FROM localsets");
     execSQL(&q,qs);
     q.next();
     int lastServerTime = q.record().value("lastservertime").toInt();
 
+    logForm->addText(qs);
     // таблица items
     // выборка вновь внесенных данных (п.1)
     // выборка измененных локально данных (п.2)
@@ -1109,6 +1082,8 @@ void MainWindow::sync1()
                  "FROM items "
                  "WHERE sid=0 OR modified=1");
     execSQL(&q, qs);
+
+    logForm->addText(qs);
 
     QJsonArray newItemsJson;
     QJsonArray modifiedItemsJson;
@@ -1149,6 +1124,9 @@ void MainWindow::sync1()
 
     QJsonDocument doc(syncJson);
     QByteArray strJson = doc.toJson();
+
+    logForm->addText("-= ОТПРАВЛЕНО =-");
+    logForm->addText(strJson);
 
 qDebug() << "sending:\n" << doc;
     QString urlo = QString(data->serverUrl());
@@ -1279,9 +1257,13 @@ void MainWindow::syncItemsReplyFinished(QNetworkReply *reply)
 
     QByteArray content = reply->readAll();
 
+    logForm->addText("-= ПОЛУЧЕНО =-");
+   // logForm->addText(content);
+
 qDebug() << "\nreceived:" << content;
     QJsonDocument json(QJsonDocument::fromJson(content));
 
+    logForm->addText(json.toJson());
 //    qDebug() << json;
 
     QJsonObject j1 = json.object();
@@ -1290,6 +1272,7 @@ qDebug() << "\nreceived:" << content;
 
     /* получаем sid от отправленных данных в таблицу items */
     QJsonArray newItemsSids = j1["newItemsSids"].toArray();
+    logForm->addText("newItemsSids");
     for(int j=0;j<newItemsSids.count();j++){
         QJsonObject obj = newItemsSids[j].toObject();
         QString qs = QString("UPDATE items SET "
@@ -1298,16 +1281,25 @@ qDebug() << "\nreceived:" << content;
                 .arg(obj["id"].toString())
                 .arg(obj["sid"].toInt());
         execSQL(qs);
+        logForm->addText(qs);
     }
 
     /* апдейтим время изменения на серверное для измененнных позиций */
-    QString qs = QString("UPDATE items SET "
-                         "u=%1 WHERE modified=1")
-            .arg(serverTime);
-    execSQL(qs);
+    QJsonArray modifiedItemsSids = j1["modifiedItems"].toArray();
+    logForm->addText("modifiedItems");
+    for(int j=0;j<modifiedItemsSids.count();j++){
+        QJsonObject obj = modifiedItemsSids[j].toObject();
+        QString qs = QString("UPDATE items SET "
+                             "u=%1, modified=0 WHERE id LIKE '%2'")
+                .arg(obj["u"].toInt())
+                .arg(obj["id"].toString());
+        execSQL(qs);
+        logForm->addText(qs);
+    }
 
     /* получаем новые данные из items внесенные извне */
     QJsonArray newItemsFromAnotherPlace = j1["newItemsFromAnotherPlace"].toArray();
+    logForm->addText("newItemsFromAnotherPlace");
     for(int j=0;j<newItemsFromAnotherPlace.count();j++){
         QJsonObject obj = newItemsFromAnotherPlace[j].toObject();
 
@@ -1330,8 +1322,9 @@ qDebug() << "\nreceived:" << content;
         fItems.append(itm);
     }
 
-    qs = QString("UPDATE localsets SET lastservertime=%1").arg(serverTime);
+    QString qs = QString("UPDATE localsets SET lastservertime=%1").arg(serverTime);
     execSQL(qs);
+    logForm->addText(qs);
 
     st2 = QDateTime::currentDateTime();
     syncLog.append( QString("inserted reveived data in %1 msecs").arg(st1.msecsTo(st2)) );
@@ -1378,4 +1371,21 @@ void MainWindow::on_toolBox_currentChanged(int index)
         case 0: ui->stackedWidget->setCurrentIndex(0); break;
         case 1: ui->stackedWidget->setCurrentIndex(1); break;
     }
+}
+
+void MainWindow::on_btLog_clicked()
+{
+    logForm->show();
+}
+
+void MainWindow::on_actClearBase_triggered()
+{
+    QSqlQuery q;
+    QString qs;
+
+    qs = QString("DELETE FROM items");
+    execSQL(qs);
+
+    qs = QString("DELETE FROM events");
+    execSQL(qs);
 }

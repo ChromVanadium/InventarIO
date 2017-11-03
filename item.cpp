@@ -203,14 +203,17 @@ int CVItem::sid()
     return f_sid;
 }
 
-
-
 void CVItem::setModified(bool isModified)
 {
     if(isModified)
         f_modified = 1;
     else
         f_modified = 0;
+}
+
+bool CVItem::modified()
+{
+    return f_modified;
 }
 
 void CVItem::addEvent(QString _eventText)
@@ -272,7 +275,7 @@ void CVItem::toDB(bool force)
 {
     QString hash1 = makeHash();
     bool a = hash0.compare(hash1,Qt::CaseInsensitive)==0;
-qDebug() << hash0 << hash1 << f_modified;
+
     if(!a || f_modified==1 || force){
         hash0 = hash1;
 

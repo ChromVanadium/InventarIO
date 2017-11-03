@@ -85,6 +85,13 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QPushButton" name="btLog">
+        <property name="text">
+         <string>log</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
     <item>
@@ -296,6 +303,7 @@ selection-background-color: rgb(255, 255, 224);</string>
     <addaction name="actOpenDB"/>
     <addaction name="separator"/>
     <addaction name="actExit"/>
+    <addaction name="actClearBase"/>
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
@@ -339,6 +347,11 @@ selection-background-color: rgb(255, 255, 224);</string>
   <action name="action_sql">
    <property name="text">
     <string>выполнение sql запроса</string>
+   </property>
+  </action>
+  <action name="actClearBase">
+   <property name="text">
+    <string>Очистить базу</string>
    </property>
   </action>
  </widget>

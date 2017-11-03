@@ -23,6 +23,7 @@
 #include "event_dialog.h"
 #include "cv_tree_widget.h"
 #include "sql_dialog.h"
+#include "log_form.h"
 
 namespace Ui {
 class MainWindow;
@@ -77,12 +78,18 @@ private slots:
 
     void on_toolBox_currentChanged(int index);
 
+    void on_btLog_clicked();
+
+    void on_actClearBase_triggered();
+
 private:
     Ui::MainWindow *ui;
 
     QSqlDatabase db;
     bool openDB(QString dbFile);
     QString databaseName;
+
+    CVLogForm *logForm;
 
     void addItem();
     void editItem(CVItem _item);
@@ -115,7 +122,7 @@ private:
     QJsonObject syncJson;
 
     CVData *data;
-    int colUnq, colId, colRow, colType, colDesc, colVal1, colVal2, colVal3, colQR, colName;
+    int colUnq, colId, colRow, colType, colDesc, colVal1, colVal2, colVal3, colQR, colName, colSID;
 
     QStringList syncLog;
     QDateTime st0, st1, st2;
