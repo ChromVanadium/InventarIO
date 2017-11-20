@@ -57,6 +57,8 @@ void CVItemDialog::on_buttonBox_accepted()
     //f_item.setType(f_types[ui->cbType->currentIndex()]);
     f_item.setType(f_types2[ui->cbType->currentIndex()]);
 
+    f_item.checkIfMiodified();
+
     accept();
 }
 

@@ -22,11 +22,13 @@ void CVData::getFromDB()
         types2.insert(q.record().value("id").toString(),q.record().value("description").toString());
     }
 
-    qs = QString("SELECT uuid, serverurl FROM localsets LIMIT 1 ");
+    qs = QString("SELECT uuid, serverurl, lastservertime, timedelta FROM localsets LIMIT 1 ");
     execSQL(&q,qs);
     q.next();
     f_uuid = q.record().value("uuid").toString();
     f_serverUrl = q.record().value("serverurl").toString();
+    f_lastServerTime = QDateTime::fromTime_t(q.record().value("lastservertime").toInt());
+    f_timeDelta = q.record().value("timedelta").toInt();
 
     if(f_uuid.isEmpty())
         createUuid();
@@ -54,6 +56,16 @@ QString CVData::type(int index)
         if(types[i].index==index)
             res = types[i].name;
     return res;
+}
+
+QDateTime CVData::lastServerTime()
+{
+    return f_lastServerTime;
+}
+
+int CVData::timeDelta()
+{
+    return f_timeDelta;
 }
 
 void CVData::createUuid()

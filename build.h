@@ -1,3 +1,3 @@
-#define BUILD 835 
-#define BUILDDATE "18.10.2017" 
-#define BUILDTIME "18:41:36" 
+#define BUILD 892 
+#define BUILDDATE "16.11.2017" 
+#define BUILDTIME "12:17:42" 

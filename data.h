@@ -5,6 +5,7 @@
 #include "specs.h"
 #include <QUuid>
 #include <QMap>
+#include <QDateTime>
 
 class CVData : public CVSql
 {
@@ -21,8 +22,14 @@ public:
     QMap<QString, QString> types2;
     QString type(int index);
 
+    QDateTime lastServerTime();
+    int timeDelta();
+
 private:
     QString f_uuid, f_serverUrl;
+
+    QDateTime f_lastServerTime;
+    int f_timeDelta;
 
     void createUuid();
 

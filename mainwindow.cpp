@@ -13,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent) :
     childId = 0;
     parentId = 0;
 
-    ui->btJson->setVisible(false);
+    //ui->btJson->setVisible(false);
 
     QSettings *sets = new QSettings("inventa.ini",  QSettings::IniFormat);
     restoreGeometry(sets->value("Main/geometry").toByteArray());
@@ -32,14 +32,16 @@ MainWindow::MainWindow(QWidget *parent) :
 
     if(openDB(sets->value("main/lastDB").toString())){
         data->getFromDB();
-qDebug() << "s" << 1;
+
         getItems();
-qDebug() << "s" << 2;
         //fillItems();
         fillTree();
-qDebug() << "s" << 3;
         fillTable();
-qDebug() << "s" << 4;
+
+        ui->lbLastServerTime->setText( QString("%1 (%2)")
+                                       .arg(data->lastServerTime().toString("dd.MM.yyyy hh:mm:ss"))
+                                       .arg(data->lastServerTime().toTime_t()));
+        ui->lbDelta->setText( QString::number(data->timeDelta()) );
     }
 
     setWindowTitle( QString("InventarIO. %4. build %1 от %2 %3")
@@ -717,32 +719,125 @@ void MainWindow::onSomethingDropped()
 
 void MainWindow::on_btJson_clicked()
 {
-    QJsonArray itemsJson;
-    for(int i=0;i<fItems.count();i++){
-        QJsonObject j = fItems[i].toJson();
-        itemsJson.append(j);
+    QJsonArray managers;
 
-    }
+    QJsonObject manager1;
+    manager1["title"] = "Ножкин";
+    manager1["value"] = 250000;
+    manager1["short"] = true;
 
-    QJsonArray eventsJson;
-    for(int i=0;i<fItems.count();i++){
-        for(int j=0;j<fItems[i].events.count();j++){
-            QJsonObject j0 = fItems[i].events[j].toJson();
-            eventsJson.append(j0);
-        }
-    }
+    QJsonObject manager2;
+    manager2["title"] = "Ложкин";
+    manager2["value"] = 150000;
+    manager2["short"] = true;
 
-    int dt = QDateTime::currentDateTime().toTime_t();
-    syncJson["items"] = itemsJson;
-    syncJson["events"] = eventsJson;
-    syncJson["source_id"] = data->uuid();
-    syncJson["comp_time"] = dt;
+    QJsonObject manager3;
+    manager3["title"] = "Кошкин";
+    manager3["value"] = 199999;
+    manager3["short"] = true;
 
-    QJsonDocument doc(syncJson);
+    QJsonArray fields;
+    fields.append(manager1);
+    fields.append(manager2);
+    fields.append(manager3);
+
+    QJsonArray attachments;
+    QJsonObject attachment;
+    attachment["fallback"] = "Отчет по манагерам за месяц";
+    attachment["pretext"] = "Отчет по манагерам за месяц";
+    //attachment["text"] = "text ";
+    attachment["color"] = "#36a64f";
+    attachment["fields"] = fields;
+
+    QJsonObject isp1;
+    isp1["title"] = "Соколова";
+    isp1["value"] = "22300 / 1200";
+    isp1["short"] = true;
+
+    QJsonObject isp2;
+    isp2["title"] = "Молчунова";
+    isp2["value"] = "15000 / 0";
+    isp2["short"] = true;
+
+    QJsonObject isp3;
+    isp3["title"] = "Колбочкина";
+    isp3["value"] = "0 / 1200";
+    isp3["short"] = true;
+
+    QJsonArray fields2;
+    fields2.append(isp1);
+    fields2.append(isp2);
+    fields2.append(isp3);
+
+    QJsonObject attachment2;
+    attachment2["fallback"] = "Отчет по штатникам";
+    attachment2["pretext"] = "Отчет по штатникам";
+    //attachment["text"] = "text ";
+    attachment2["color"] = "#4f36a6";
+    attachment2["fields"] = fields2;
+
+    attachments.append(attachment);
+    attachments.append(attachment2);
+
+    QJsonObject payload;
+    payload["username"] = "ОТЧЕТ";
+    //payload["text"] = "text0";
+    payload["fallback"] = "fallback";
+    payload["attachments"] = attachments;
+
+    QJsonObject jsonToSend;
+    //jsonToSend["payload"] = payload;
+
+    QJsonDocument doc(payload);
     QByteArray strJson = doc.toJson();
-    //QString strJson(doc.toJson(QJsonDocument::Compact));
 
-    sendNewToServer(strJson);
+    QString urlo = QString("https://hooks.slack.com/services/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");
+
+    QNetworkAccessManager *m = new QNetworkAccessManager(this);
+    QUrl url(urlo);
+
+    QNetworkRequest request(url);
+    QSslConfiguration config = QSslConfiguration::defaultConfiguration();
+    config.setProtocol(QSsl::TlsV1_2);
+    request.setSslConfiguration(config);
+
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
+    //request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    connect(m, SIGNAL(finished(QNetworkReply *)), this, SLOT(webhookReplyFinished(QNetworkReply *)));
+    connect(m, SIGNAL(finished(QNetworkReply *)), m, SLOT(deleteLater()));
+
+    //QByteArray jsn = "{\"text\":\"Hey! this is a test\"}";
+    qDebug() << strJson;
+    m->post(request, "payload=" + strJson);
+    //m->post(request, strJson);
+
+//    QJsonArray itemsJson;
+//    for(int i=0;i<fItems.count();i++){
+//        QJsonObject j = fItems[i].toJson();
+//        itemsJson.append(j);
+
+//    }
+
+//    QJsonArray eventsJson;
+//    for(int i=0;i<fItems.count();i++){
+//        for(int j=0;j<fItems[i].events.count();j++){
+//            QJsonObject j0 = fItems[i].events[j].toJson();
+//            eventsJson.append(j0);
+//        }
+//    }
+
+//    int dt = QDateTime::currentDateTime().toTime_t();
+//    syncJson["items"] = itemsJson;
+//    syncJson["events"] = eventsJson;
+//    syncJson["source_id"] = data->uuid();
+//    syncJson["comp_time"] = dt;
+
+//    QJsonDocument doc(syncJson);
+//    QByteArray strJson = doc.toJson();
+//    //QString strJson(doc.toJson(QJsonDocument::Compact));
+
+//    sendNewToServer(strJson);
 }
 
 
@@ -1238,7 +1333,9 @@ qDebug() << content;
 
     syncLog.append( QString("sync time %1 msecs").arg(st0.msecsTo(st2)) );
 
-    ui->lbUpdated->setText( QString("last sync %1").arg(QDateTime::currentDateTime().toString("hh:mm:ss")) );
+    ui->lbUpdated->setText( QString("last sync %1 (%2)")
+                            .arg(QDateTime::currentDateTime().toString("hh:mm:ss"))
+                            .arg(QDateTime::currentDateTime().toTime_t()));
 
     //qDebug() << syncLog;
 
@@ -1297,33 +1394,87 @@ qDebug() << "\nreceived:" << content;
         logForm->addText(qs);
     }
 
+    QSqlQuery q;
+    QString qs1;
+    qs1 = QString("SELECT sid FROM items WHERE d=0");
+    q = execSQLq(qs1);
+    QList<int> sids;
+    while(q.next()){
+        sids.append(q.record().value("sid").toInt());
+    }
+
+    /* получаем измененные данные из items внесенные извне */
+    QJsonArray updatedItemsInAnotherPlace = j1["updatedItemsInAnotherPlace"].toArray();
+    logForm->addText("updatedItemsInAnotherPlace");
+    for(int j=0;j<updatedItemsInAnotherPlace.count();j++){
+        QJsonObject obj = updatedItemsInAnotherPlace[j].toObject();
+
+        CVItem itm;
+        itm = CVItem( 0,
+                      obj["id"].toString(),
+                obj["parent"].toString(),
+                obj["lvl"].toInt(),
+                obj["qr"].toString(),
+                obj["name"].toString(),
+                obj["description"].toString(),
+                obj["type"].toString(),
+                obj["value1"].toString(),
+                obj["value2"].toString(),
+                obj["value3"].toString(),
+                obj["u"].toInt(),
+                0,
+                obj["sid"].toInt());
+        itm.updateToDBbySID();
+    }
+
     /* получаем новые данные из items внесенные извне */
     QJsonArray newItemsFromAnotherPlace = j1["newItemsFromAnotherPlace"].toArray();
     logForm->addText("newItemsFromAnotherPlace");
     for(int j=0;j<newItemsFromAnotherPlace.count();j++){
         QJsonObject obj = newItemsFromAnotherPlace[j].toObject();
 
-        CVItem itm;
-        itm = CVItem( 0,
-                      obj["id"].toString(),
-                      obj["parent"].toString(),
-                      obj["lvl"].toInt(),
-                      obj["qr"].toString(),
-                      obj["name"].toString(),
-                      obj["description"].toString(),
-                      obj["type"].toString(),
-                      obj["value1"].toString(),
-                      obj["value2"].toString(),
-                      obj["value3"].toString(),
-                      obj["u"].toInt(),
-                      0,
-                      obj["sid"].toInt());
-        itm.toDB(true);
-        fItems.append(itm);
+        int e = 0;
+        for(int j=0;j<sids.count();j++){
+            if(obj["sid"].toInt()==sids[j])
+                e++;
+        }
+
+        if(e==0){
+            CVItem itm;
+            itm = CVItem( 0,
+                          obj["id"].toString(),
+                          obj["parent"].toString(),
+                          obj["lvl"].toInt(),
+                          obj["qr"].toString(),
+                          obj["name"].toString(),
+                          obj["description"].toString(),
+                          obj["type"].toString(),
+                          obj["value1"].toString(),
+                          obj["value2"].toString(),
+                          obj["value3"].toString(),
+                          obj["u"].toInt(),
+                          0,
+                          obj["sid"].toInt());
+            //itm.reHash();
+            itm.toDB(true);
+            fItems.append(itm);
+        } else {
+            // updatedItemsInAnotherPlace
+        }
     }
 
-    QString qs = QString("UPDATE localsets SET lastservertime=%1").arg(serverTime);
+    int currectTime = QDateTime::currentDateTime().toTime_t();
+    int timeDelta = currectTime-serverTime;
+    QString qs = QString("UPDATE localsets SET "
+                         "lastservertime=%1, "
+                         "timedelta=%2")
+            .arg(serverTime)
+            .arg(timeDelta);
     execSQL(qs);
+    ui->lbLastServerTime->setText( QString("%1 (%2)")
+                                   .arg(QDateTime::fromTime_t(serverTime).toString("dd.MM.yyyy hh:mm:ss"))
+                                   .arg(serverTime) );
+    ui->lbDelta->setText( QString::number(timeDelta) );
     logForm->addText(qs);
 
     st2 = QDateTime::currentDateTime();
@@ -1337,6 +1488,16 @@ qDebug() << "\nreceived:" << content;
     getItems();
 //    //getEvents();
     fillTree();
+}
+
+void MainWindow::webhookReplyFinished(QNetworkReply *reply)
+{
+    QByteArray content = reply->readAll();
+
+qDebug() << "\nreceived:" << content;
+//    QJsonDocument json(QJsonDocument::fromJson(content));
+
+//    logForm->addText(json.toJson());
 }
 
 

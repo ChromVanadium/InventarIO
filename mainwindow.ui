@@ -214,7 +214,7 @@ selection-background-color: rgb(255, 255, 224);</string>
               <x>0</x>
               <y>0</y>
               <width>194</width>
-              <height>150</height>
+              <height>127</height>
              </rect>
             </property>
             <attribute name="label">
@@ -227,7 +227,7 @@ selection-background-color: rgb(255, 255, 224);</string>
               <x>0</x>
               <y>0</y>
               <width>194</width>
-              <height>150</height>
+              <height>127</height>
              </rect>
             </property>
             <attribute name="label">
@@ -276,6 +276,27 @@ selection-background-color: rgb(255, 255, 224);</string>
            </property>
            <property name="wordWrap">
             <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lbLastServerTime">
+           <property name="text">
+            <string>-</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lbLastSync">
+           <property name="text">
+            <string>-</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="lbDelta">
+           <property name="text">
+            <string>-</string>
            </property>
           </widget>
          </item>

@@ -70,6 +70,8 @@ private slots:
     void syncReplyFinished(QNetworkReply *reply);
     void syncItemsReplyFinished(QNetworkReply *reply);
 
+    void webhookReplyFinished(QNetworkReply *reply);
+
     void on_btSync_clicked();
 
     void on_btDelete_clicked();

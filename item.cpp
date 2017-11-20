@@ -85,6 +85,11 @@ void CVItem::setUnq(int _unq){
     f_unq = _unq;
 }
 
+void CVItem::reHash()
+{
+    hash0 = makeHash();
+}
+
 QString CVItem::name(){
     return f_name;
 }
@@ -211,6 +216,15 @@ void CVItem::setModified(bool isModified)
         f_modified = 0;
 }
 
+void CVItem::checkIfMiodified()
+{
+    qDebug() << "void CVItem::checkIfMiodified()";
+    QString hash1 = makeHash();
+    bool m = hash0.compare(hash1,Qt::CaseInsensitive)!=0;
+    qDebug() << hash0 << hash1 << m;
+    setModified(m);
+}
+
 bool CVItem::modified()
 {
     return f_modified;
@@ -275,6 +289,7 @@ void CVItem::toDB(bool force)
 {
     QString hash1 = makeHash();
     bool a = hash0.compare(hash1,Qt::CaseInsensitive)==0;
+qDebug() << "hash0" << hash0 << "hash1" << hash1 << a << "modified" << f_modified;
 
     if(!a || f_modified==1 || force){
         hash0 = hash1;
@@ -284,6 +299,40 @@ void CVItem::toDB(bool force)
         else
             insertToDB();
     }
+}
+
+void CVItem::updateToDBbySID()
+{
+    QSqlQuery q;
+    QString qs;
+
+    f_lastUpdate = QDateTime::currentDateTime().toTime_t();
+    //f_modified = 1;
+
+    if(f_id.isEmpty())
+        f_id = QUuid::createUuid().toString();
+
+    qs = QString("UPDATE items SET "
+                 "name='%2', description='%3', "
+                 "type='%4', "
+                 "value1='%5', value2='%6', value3='%7', d=%8, qr='%9', parent='%10', lvl=%11, u=%12, modified=%14, sid=%13, id='%15' "
+                 "WHERE sid=%1")
+            .arg(f_sid)
+            .arg(f_name.remove("'"))
+            .arg(f_description.remove("'"))
+            .arg(f_type)
+            .arg(f_value1.remove("'"))
+            .arg(f_value2.remove("'"))
+            .arg(f_value3.remove("'"))
+            .arg(f_d)
+            .arg(f_qr.remove("'"))
+            .arg(f_parent)
+            .arg(f_level)
+            .arg(f_lastUpdate)
+            .arg(f_sid)
+            .arg(f_modified)
+            .arg(f_id);
+    execSQL(qs);
 }
 
 void CVItem::markToDelete()
@@ -317,7 +366,7 @@ void CVItem::updateToDB()
     QString qs;
 
     f_lastUpdate = QDateTime::currentDateTime().toTime_t();
-    f_modified = 1;
+    //f_modified = 1;
 
     if(f_id.isEmpty())
         f_id = QUuid::createUuid().toString();

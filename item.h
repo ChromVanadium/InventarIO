@@ -23,6 +23,8 @@ public:
     int unq();
     void setUnq(int _unq);
 
+    void reHash();
+
     QString id();
     void setId(QString _id);
     QString parent();
@@ -61,10 +63,12 @@ public:
 
 
     void toDB(bool force);
+    void updateToDBbySID();
     void insertToDB();
     void updateToDB();
     void markToDelete();
     void setModified(bool isModified);
+    void checkIfMiodified();
     bool modified();
 
     QList<CVEvent> events;
